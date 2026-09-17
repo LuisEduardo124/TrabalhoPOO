@@ -1,9 +1,9 @@
 class livro {
 
-    String titulo;
-    String autor;
-    String isbn;
-    int anoPublicacao;
-    boolean disponivel;
+    private String titulo;
+    private String autor;
+    private String isbn;
+    private int anoPublicacao;
+    private boolean disponivel;
 
 }

@@ -1,4 +1,4 @@
 class biblioteca {
-    livro[] livros;
-    usuario[] usuarios;
+    private livro  [] livros;
+    private usuario[] usuarios;
 }
