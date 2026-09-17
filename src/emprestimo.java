@@ -1,9 +1,9 @@
 class Emprestimo {
-    livro livro;
-    usuario usuario;
+    private livro livro;
+    private usuario usuario;
 
-    String dataEmprestimo;
-    String dataDevolucao;
-    boolean ativo;
+    private String dataEmprestimo;
+    private String dataDevolucao;
+    private  boolean ativo;
 
 }

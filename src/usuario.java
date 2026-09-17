@@ -1,5 +1,5 @@
 class usuario {
-    String nome;
-    int id;
-    String email;
+    private String nome;
+    private int id;
+    private String email;
 }
