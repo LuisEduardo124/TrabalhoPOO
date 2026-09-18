@@ -1,40 +1,127 @@
-import java.util.*;
+import java.util.Scanner;
 
-class Main{
+public class Main {
+    private static final Scanner entrada = new Scanner(System.in);
+    private static final Biblioteca biblioteca = new Biblioteca();
 
     public static void main(String[] args) {
-        Scanner entrada = new Scanner(System.in);
         int opcao;
 
-
         do {
-            System.out.println("Diga qual Categoria quer");
+            mostrarMenu();
+            opcao = lerInteiro("Escolha uma opção: ");
 
-            System.out.println("Opção 1 - Cadastrar Livro");
-            System.out.println("Opção 2 - Listar Livros");
-            System.out.println("Opção 4 -");
-            System.out.println("Opção 5 -");
-            System.out.println("Opção 6 -");
-
-            opcao = entrada.nextInt();
-
-        } while (opcao == 0);
-
-        if (opcao == 1) {
-
-        } else if (opcao == 2) {
-
-        } else if (opcao == 3) {
-
-        } else if (opcao == 4) {
-
-        } else if (opcao == 5) {
-
-        } else if (opcao == 6) {
-
-        }
+            try {
+                executarOpcao(opcao);
+            } catch (IllegalArgumentException | IllegalStateException erro) {
+                System.out.println("Erro: " + erro.getMessage());
+            }
+        } while (opcao != 0);
 
         entrada.close();
+        System.out.println("Programa encerrado.");
+    }
 
+    private static void mostrarMenu() {
+        System.out.println("\n===== BIBLIOTECA =====");
+        System.out.println("1 - Cadastrar livro");
+        System.out.println("2 - Cadastrar revista");
+        System.out.println("3 - Cadastrar usuário");
+        System.out.println("4 - Ver itens");
+        System.out.println("5 - Ver usuários");
+        System.out.println("6 - Fazer empréstimo");
+        System.out.println("7 - Fazer devolução");
+        System.out.println("8 - Ver empréstimos");
+        System.out.println("0 - Sair");
+    }
+
+    private static void executarOpcao(int opcao) {
+        switch (opcao) {
+            case 1:
+                cadastrarLivro();
+                break;
+            case 2:
+                cadastrarRevista();
+                break;
+            case 3:
+                cadastrarUsuario();
+                break;
+            case 4:
+                biblioteca.mostrarItens();
+                break;
+            case 5:
+                biblioteca.mostrarUsuarios();
+                break;
+            case 6:
+                fazerEmprestimo();
+                break;
+            case 7:
+                fazerDevolucao();
+                break;
+            case 8:
+                biblioteca.mostrarEmprestimos();
+                break;
+            case 0:
+                break;
+            default:
+                System.out.println("Opção inválida.");
+        }
+    }
+
+    private static void cadastrarLivro() {
+        String codigo = lerTexto("Código: ");
+        String titulo = lerTexto("Título: ");
+        String autor = lerTexto("Autor: ");
+        String isbn = lerTexto("ISBN: ");
+
+        biblioteca.adicionarItem(new Livro(codigo, titulo, autor, isbn));
+        System.out.println("Livro salvo.");
+    }
+
+    private static void cadastrarRevista() {
+        String codigo = lerTexto("Código: ");
+        String titulo = lerTexto("Título: ");
+        int edicao = lerInteiro("Número da edição: ");
+
+        biblioteca.adicionarItem(new Revista(codigo, titulo, edicao));
+        System.out.println("Revista salva.");
+    }
+
+    private static void cadastrarUsuario() {
+        int id = lerInteiro("ID: ");
+        String nome = lerTexto("Nome: ");
+        String email = lerTexto("E-mail: ");
+
+        biblioteca.adicionarUsuario(new Usuario(id, nome, email));
+        System.out.println("Usuário salvo.");
+    }
+
+    private static void fazerEmprestimo() {
+        String codigo = lerTexto("Código do item: ");
+        int idUsuario = lerInteiro("ID do usuário: ");
+
+        biblioteca.emprestar(codigo, idUsuario);
+        System.out.println("Empréstimo feito.");
+    }
+
+    private static void fazerDevolucao() {
+        String codigo = lerTexto("Código do item: ");
+        biblioteca.devolver(codigo);
+        System.out.println("Devolução feita.");
+    }
+
+    private static String lerTexto(String mensagem) {
+        System.out.print(mensagem);
+        return entrada.nextLine();
+    }
+
+    private static int lerInteiro(String mensagem) {
+        while (true) {
+            try {
+                return Integer.parseInt(lerTexto(mensagem));
+            } catch (NumberFormatException erro) {
+                System.out.println("Digite um número inteiro válido.");
+            }
+        }
     }
 }
