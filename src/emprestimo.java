@@ -1,6 +1,6 @@
 class Emprestimo {
-    private livro livro;
-    private usuario usuario;
+    private String livro;
+    private String usuario;
 
     private String dataEmprestimo;
     private String dataDevolucao;
