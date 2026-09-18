@@ -6,7 +6,16 @@ class livro {
     private int anoPublicacao;
     private boolean disponivel;
 
-    
+    public livro(String titulo, String autor, String isbn, int anoPublicacao, boolean disponivel) {
+        this.titulo = titulo;
+        this.autor = autor;
+        this.isbn = isbn;
+        this.anoPublicacao = anoPublicacao;
+        this.disponivel = disponivel;
+    }
+  
+  
+  
     // get/set isbn
      public void setIsbn(String isbn) {
         this.isbn = isbn;
@@ -45,7 +54,6 @@ class livro {
         this.anoPublicacao = anoPublicacao;
     }
 
-    
     
     // get/set Disponivel
     public boolean isDisponivel() {
