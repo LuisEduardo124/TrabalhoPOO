@@ -69,18 +69,19 @@ public class Main {
     }
 
     private static void cadastrarLivro() {
-        String codigo = lerTexto("Código: ");
-        String titulo = lerTexto("Título: ");
-        String autor = lerTexto("Autor: ");
-        String isbn = lerTexto("ISBN: ");
+        String codigo = lerTextoApenasNumeros("Código: ");
+        String titulo = lerTextoApenasLetras("Título: ");
+        String autor = lerTextoApenasLetras("Autor: ");
+
+        String isbn = lerTextoApenasNumeros("ISBN: ");
 
         biblioteca.adicionarItem(new Livro(codigo, titulo, autor, isbn));
         System.out.println("Livro salvo.");
     }
 
     private static void cadastrarRevista() {
-        String codigo = lerTexto("Código: ");
-        String titulo = lerTexto("Título: ");
+        String codigo = lerTextoApenasNumeros("Código: ");
+        String titulo = lerTextoApenasLetras("Título: ");
         int edicao = lerInteiro("Número da edição: ");
 
         biblioteca.adicionarItem(new Revista(codigo, titulo, edicao));
@@ -113,6 +114,26 @@ public class Main {
     private static String lerTexto(String mensagem) {
         System.out.print(mensagem);
         return entrada.nextLine();
+    }
+
+    private static String lerTextoApenasLetras(String mensagem) {
+        while (true) {
+            String texto = lerTexto(mensagem);
+            if (texto.matches("[a-zA-ZÀ-ÿ\\s]+")) {
+                return texto;
+            }
+            System.out.println("Digite apenas letras e espaços.");
+        }
+    }
+
+    private static String lerTextoApenasNumeros(String mensagem) {
+        while (true) {
+            String texto = lerTexto(mensagem);
+            if (texto.matches("\\d+")) {
+                return texto;
+            }
+            System.out.println("Digite apenas números.");
+        }
     }
 
     private static int lerInteiro(String mensagem) {

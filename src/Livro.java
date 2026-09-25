@@ -7,6 +7,10 @@ public class Livro extends ItemBiblioteca {
         this.autor = autor;
         this.isbn = isbn;
     }
+   
+    public static boolean VerificarISBN(String texto) {
+    return texto.matches("[0-9]+");
+    }
 
     @Override
     public String getTipo() {
