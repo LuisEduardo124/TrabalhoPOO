@@ -72,8 +72,12 @@ public class Main {
         String codigo = lerTextoApenasNumeros("Código: ");
         String titulo = lerTextoApenasLetras("Título: ");
         String autor = lerTextoApenasLetras("Autor: ");
-
+        
         String isbn = lerTextoApenasNumeros("ISBN: ");
+        while (isbn.length() != 13) {
+            System.out.println("ISBN deve ter 13 números!");
+            isbn = lerTextoApenasNumeros("ISBN: ");
+        }
 
         biblioteca.adicionarItem(new Livro(codigo, titulo, autor, isbn));
         System.out.println("Livro salvo.");
@@ -122,7 +126,7 @@ public class Main {
             if (texto.matches("[a-zA-ZÀ-ÿ\\s]+")) {
                 return texto;
             }
-            System.out.println("Digite apenas letras e espaços.");
+            System.out.println("Digite apenas letras!");
         }
     }
 
@@ -132,7 +136,7 @@ public class Main {
             if (texto.matches("\\d+")) {
                 return texto;
             }
-            System.out.println("Digite apenas números.");
+            System.out.println("Digite apenas números!");
         }
     }
 
