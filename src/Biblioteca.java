@@ -6,6 +6,16 @@ public class Biblioteca {
     private final List<Usuario> usuarios = new ArrayList<>();
     private final List<Emprestimo> emprestimos = new ArrayList<>();
 
+    public List<ItemBiblioteca> getItens() {
+        return itens;
+    }
+    public List<Usuario> getUsuarios() {
+        return usuarios;
+    }
+    public List<Emprestimo> getEmprestimos() {
+        return emprestimos;
+    }
+
     public void adicionarItem(ItemBiblioteca item) {
         if (procurarItem(item.getCodigo()) != null) {
             throw new IllegalArgumentException("Já existe um item com esse código.");
