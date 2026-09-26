@@ -12,12 +12,12 @@ public class App extends Application {
 
     @Override
     public void start(Stage stage) {
-        Label texto = new Label("Sistema de Biblioteca");
+        Label texto = new Label("Biblioteeca");
 
         StackPane raiz = new StackPane();
         raiz.getChildren().add(texto);
 
-        Scene cena = new Scene(raiz, 600, 400);
+        Scene cena = new Scene(raiz, 600, 1000);
         stage.setScene(cena);
         stage.setTitle("Biblioteca");
         stage.show();
