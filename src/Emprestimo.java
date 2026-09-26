@@ -25,7 +25,8 @@ public class Emprestimo {
 
     public boolean isAtivo() {
         if (ativo) {
-            System.out.println("Empréstimo ativo. Hora do empréstimo: " + horaEmprestimo.format(formatador));
+            System.out.println("Você tem um emprestimo ativo por 2 dias, após esse período o emprestimo será cancelado.");
+            System.out.println("Hora atual: " + LocalTime.now().format(formatador));
         } else {
             System.out.println("Empréstimo inativo.");
         }
