@@ -1,9 +1,13 @@
+package modelo;
+
 public abstract class ItemBiblioteca {
     private final String codigo;
     private String titulo;
     private boolean disponivel = true;
 
     protected ItemBiblioteca(String codigo, String titulo) {
+        validarCodigo(codigo);
+        validarTitulo(titulo);
         this.codigo = codigo;
         this.titulo = titulo;
     }
@@ -19,6 +23,7 @@ public abstract class ItemBiblioteca {
     }
 
     public void setTitulo(String titulo) {
+        validarTitulo(titulo);
         this.titulo = titulo;
     }
 
@@ -28,13 +33,25 @@ public abstract class ItemBiblioteca {
 
     public void emprestar() {
         if (!disponivel) {
-            throw new IllegalStateException("O item já está emprestado.");
+            throw new ItemIndisponivelException("O item já está emprestado.");
         }
         disponivel = false;
     }
 
     public void devolver() {
         disponivel = true;
+    }
+
+    private static void validarCodigo(String codigo) {
+        if (codigo == null || !codigo.matches("\\d+")) {
+            throw new IllegalArgumentException("O código deve ter apenas números.");
+        }
+    }
+
+    private static void validarTitulo(String titulo) {
+        if (titulo == null || titulo.trim().isEmpty()) {
+            throw new IllegalArgumentException("O título não pode ser vazio.");
+        }
     }
 
     @Override

@@ -1,5 +1,11 @@
+package servico;
 import java.util.ArrayList;
 import java.util.List;
+
+import modelo.Emprestimo;
+import modelo.ItemBiblioteca;
+import modelo.ItemIndisponivelException;
+import modelo.Usuario;
 
 public class Biblioteca {
     private final List<ItemBiblioteca> itens = new ArrayList<>();
@@ -7,16 +13,23 @@ public class Biblioteca {
     private final List<Emprestimo> emprestimos = new ArrayList<>();
 
     public List<ItemBiblioteca> getItens() {
-        return itens;
+        atualizarEmprestimos();
+        return new ArrayList<>(itens);
     }
+
     public List<Usuario> getUsuarios() {
-        return usuarios;
+        return new ArrayList<>(usuarios);
     }
+
     public List<Emprestimo> getEmprestimos() {
-        return emprestimos;
+        atualizarEmprestimos();
+        return new ArrayList<>(emprestimos);
     }
 
     public void adicionarItem(ItemBiblioteca item) {
+        if (item == null) {
+            throw new IllegalArgumentException("Item inválido.");
+        }
         if (procurarItem(item.getCodigo()) != null) {
             throw new IllegalArgumentException("Já existe um item com esse código.");
         }
@@ -24,6 +37,9 @@ public class Biblioteca {
     }
 
     public void adicionarUsuario(Usuario usuario) {
+        if (usuario == null) {
+            throw new IllegalArgumentException("Usuário inválido.");
+        }
         if (procurarUsuario(usuario.getId()) != null) {
             throw new IllegalArgumentException("Já existe um usuário com esse ID.");
         }
@@ -48,7 +64,7 @@ public class Biblioteca {
         return null;
     }
 
-    public void emprestar(String codigoItem, int idUsuario) {
+    public Emprestimo emprestar(String codigoItem, int idUsuario) {
         ItemBiblioteca item = procurarItem(codigoItem);
         Usuario usuario = procurarUsuario(idUsuario);
 
@@ -58,7 +74,16 @@ public class Biblioteca {
         if (usuario == null) {
             throw new IllegalArgumentException("Usuário não encontrado.");
         }
-        emprestimos.add(new Emprestimo(item, usuario));
+
+        atualizarEmprestimos();
+        if (!item.isDisponivel()) {
+            throw new ItemIndisponivelException("O item \"" + item.getTitulo() + "\" já está emprestado.");
+        }
+
+        item.emprestar();
+        Emprestimo emprestimo = new Emprestimo(item, usuario);
+        emprestimos.add(emprestimo);
+        return emprestimo;
     }
 
     public void devolver(String codigoItem) {
@@ -72,33 +97,9 @@ public class Biblioteca {
         throw new IllegalArgumentException("Não existe empréstimo ativo para esse item.");
     }
 
-    public void mostrarItens() {
-        if (itens.isEmpty()) {
-            System.out.println("Nenhum item cadastrado.");
-            return;
-        }
-        for (ItemBiblioteca item : itens) {
-            System.out.println(item);
-        }
-    }
-
-    public void mostrarUsuarios() {
-        if (usuarios.isEmpty()) {
-            System.out.println("Nenhum usuário cadastrado.");
-            return;
-        }
-        for (Usuario usuario : usuarios) {
-            System.out.println(usuario);
-        }
-    }
-
-    public void mostrarEmprestimos() {
-        if (emprestimos.isEmpty()) {
-            System.out.println("Nenhum empréstimo realizado.");
-            return;
-        }
+    private void atualizarEmprestimos() {
         for (Emprestimo emprestimo : emprestimos) {
-            System.out.println(emprestimo);
+            emprestimo.atualizarStatus();
         }
     }
 }
