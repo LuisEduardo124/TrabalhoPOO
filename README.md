@@ -58,11 +58,11 @@ A janela (`MainGUI`, que estende `JFrame`) tem três abas (`JTabbedPane`). Em ca
 | Empréstimos | Código do item, ID do usuário | Fazer empréstimo, Fazer devolução | Empréstimos com data, prazo, status e data da devolução |
 
 Como funciona:
-- Cada botão tem um `ActionListener`, escrito como classe anônima, que chama um método da tela, por exemplo `cadastrarLivro()`.
-- Cada método lê os campos, cria o objeto do `modelo` e chama a `Biblioteca`. Se der certo, mostra uma mensagem, limpa os campos e atualiza as listas (`atualizarListas()`).
-- Se algum dado for inválido, a classe do `modelo` ou a `Biblioteca` lança uma exceção, e a tela mostra a mensagem num `JOptionPane`. A `ItemIndisponivelException` aparece num aviso próprio, "Item indisponível".
-- Campos numéricos (ID e edição) são convertidos com `Integer.parseInt` no método `lerInteiro()`, que avisa quando o texto não é um número.
-- Ao fazer um empréstimo, a mensagem de confirmação mostra a data do empréstimo e o prazo de devolução.
+Cada botão tem um `ActionListener`, escrito como classe anônima, que chama um método da tela, por exemplo `cadastrarLivro()`.
+Cada método lê os campos, cria o objeto do `modelo` e chama a `Biblioteca`. Se der certo, mostra uma mensagem, limpa os campos e atualiza as listas (`atualizarListas()`).
+Se algum dado for inválido, a classe do `modelo` ou a `Biblioteca` lança uma exceção, e a tela mostra a mensagem num `JOptionPane`. A `ItemIndisponivelException` aparece num aviso próprio, "Item indisponível".
+Campos numéricos (ID e edição) são convertidos com `Integer.parseInt` no método `lerInteiro()`, que avisa quando o texto não é um número.
+Ao fazer um empréstimo, a mensagem de confirmação mostra a data do empréstimo e o prazo de devolução.
 
 ## Regras de negócio
 
