@@ -92,7 +92,7 @@ O histórico de empréstimos é mantido, inclusive dos devolvidos ou expirados.
 | Polimorfismo | `Biblioteca` guarda uma `List<ItemBiblioteca>` com livros e revistas e chama `getTipo()` e `toString()` sem conhecer o tipo concreto. |
 | Palavra `super` | Os construtores de `Livro` e `Revista` chamam `super(codigo, titulo)`, e o `toString()` deles reaproveita `super.toString()`. A exceção própria chama `super(mensagem)`. |
 | Abstração | `ItemBiblioteca` é abstrata e declara `getTipo()`, então não pode ser instanciada diretamente. |
-| Interfaces | Não há interface própria: nenhuma regra do sistema varia (o prazo é igual para livros e revistas), e criar uma só para marcar o item seria forçar o conceito. A interface `ActionListener` do Java é usada nos botões da `MainGUI`, por meio de classes anônimas. |
+| Interfaces | Não há interface própria: nenhuma regra do sistema varia (o prazo é igual para livros e revistas), e criar uma só para marcar o item seria forçar o conceito. Ira ser implementada interface na fase 2. |
 | Enum | `StatusEmprestimo` (`ATIVO`, `DEVOLVIDO`, `EXPIRADO`) guarda a situação de cada `Emprestimo`, no lugar de um `boolean`. |
 | Tratamento de exceções | As classes do `modelo` e a `Biblioteca` lançam `IllegalArgumentException` para dados inválidos e a exceção própria `ItemIndisponivelException` para item já emprestado. A `MainGUI` trata tudo com `try/catch` e mostra a mensagem na tela. |
 | Interface gráfica | Feita em Swing (`MainGUI`), com abas, formulários, botões, listas e caixas de mensagem (`JOptionPane`). |
