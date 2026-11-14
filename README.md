@@ -97,3 +97,33 @@ O histórico de empréstimos é mantido, inclusive dos devolvidos ou expirados.
 | Tratamento de exceções | As classes do `modelo` e a `Biblioteca` lançam `IllegalArgumentException` para dados inválidos e a exceção própria `ItemIndisponivelException` para item já emprestado. A `MainGUI` trata tudo com `try/catch` e mostra a mensagem na tela. |
 | Interface gráfica | Feita em Swing (`MainGUI`), com abas, formulários, botões, listas e caixas de mensagem (`JOptionPane`). |
 | Data e hora | `Emprestimo` usa `LocalDateTime` para registrar o empréstimo e a devolução, `ChronoUnit` para calcular o prazo de 2 dias e `DateTimeFormatter` para exibir as datas no formato `dd/MM/yyyy HH:mm`. |
+## SOLID aplicado
+
+- **SRP:** `Biblioteca` concentra as regras de negócio; `RepositorioBibliotecaMemoria` cuida do armazenamento; `MainGUI` cuida da interação com o usuário.
+- **OCP:** o serviço trabalha com a interface `RepositorioBiblioteca`, permitindo outra implementação sem alterar as regras.
+- **LSP:** `Livro` e `Revista` continuam substituíveis por `ItemBiblioteca`.
+- **ISP:** a interface de armazenamento contém somente as operações necessárias para o serviço.
+- **DIP:** `Biblioteca` recebe `RepositorioBiblioteca` pelo construtor, em vez de criar ou conhecer diretamente a implementação concreta.
+
+## Clean Code aplicado
+
+- nomes de classes, métodos e variáveis expressivos;
+- métodos menores e com uma responsabilidade;
+- validações preservadas nas entidades;
+- tratamento de erros centralizado nos fluxos da interface;
+- `StringBuilder` para montar listagens;
+- execução da interface pela `SwingUtilities.invokeLater`;
+- reutilização de métodos auxiliares para campos, botões, limpeza e operações;
+- cópias das listas retornadas pelo repositório para evitar exposição do estado interno.
+
+## Funcionalidades preservadas
+
+- cadastro de livros, revistas e usuários;
+- listagem do acervo e dos usuários;
+- empréstimo e devolução;
+- histórico de empréstimos durante a execução;
+- validação dos dados e mensagens de erro.
+
+## Observação
+
+Ao fechar a aplicação, os dados são perdidos. A persistência em banco está somente na outra versão do projeto.
