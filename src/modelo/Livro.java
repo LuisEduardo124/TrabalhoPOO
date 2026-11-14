@@ -1,4 +1,5 @@
 package modelo;
+/** Item do acervo que representa um livro. */
 public class Livro extends ItemBiblioteca {
     private String autor;
     private String isbn;

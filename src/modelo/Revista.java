@@ -1,5 +1,6 @@
 package modelo;
 
+/** Item do acervo que representa uma revista. */
 public class Revista extends ItemBiblioteca {
     private int numeroEdicao;
 

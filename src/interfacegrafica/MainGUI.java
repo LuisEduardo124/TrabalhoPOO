@@ -1,8 +1,7 @@
 package interfacegrafica;
+
 import java.awt.BorderLayout;
 import java.awt.GridLayout;
-import java.awt.event.ActionEvent;
-import java.awt.event.ActionListener;
 
 import javax.swing.JButton;
 import javax.swing.JFrame;
@@ -13,6 +12,7 @@ import javax.swing.JScrollPane;
 import javax.swing.JTabbedPane;
 import javax.swing.JTextArea;
 import javax.swing.JTextField;
+import javax.swing.SwingUtilities;
 
 import modelo.Emprestimo;
 import modelo.ItemBiblioteca;
@@ -21,226 +21,162 @@ import modelo.Livro;
 import modelo.Revista;
 import modelo.Usuario;
 import servico.Biblioteca;
+import servico.RepositorioBibliotecaMemoria;
 
+/** Interface Swing da versão em memória da biblioteca. */
 public class MainGUI extends JFrame {
-    private final Biblioteca biblioteca = new Biblioteca();
+    private final Biblioteca biblioteca;
+    private final JTextField campoCodigo = new JTextField();
+    private final JTextField campoTitulo = new JTextField();
+    private final JTextField campoAutor = new JTextField();
+    private final JTextField campoIsbn = new JTextField();
+    private final JTextField campoEdicao = new JTextField();
+    private final JTextField campoIdUsuario = new JTextField();
+    private final JTextField campoNome = new JTextField();
+    private final JTextField campoEmail = new JTextField();
+    private final JTextField campoCodigoEmprestimo = new JTextField();
+    private final JTextField campoIdEmprestimo = new JTextField();
+    private final JTextArea listaItens = criarAreaDeLista();
+    private final JTextArea listaUsuarios = criarAreaDeLista();
+    private final JTextArea listaEmprestimos = criarAreaDeLista();
 
-    private JTextField campoCodigo;
-    private JTextField campoTitulo;
-    private JTextField campoAutor;
-    private JTextField campoIsbn;
-    private JTextField campoEdicao;
-
-    private JTextField campoIdUsuario;
-    private JTextField campoNome;
-    private JTextField campoEmail;
-
-    private JTextField campoCodigoEmprestimo;
-    private JTextField campoIdEmprestimo;
-
-    private JTextArea listaItens;
-    private JTextArea listaUsuarios;
-    private JTextArea listaEmprestimos;
-
-    public MainGUI() {
-        setTitle("Biblioteca");
-        setSize(800, 600);
-        setLocationRelativeTo(null);
-        setDefaultCloseOperation(JFrame.EXIT_ON_CLOSE);
-
+    public MainGUI(Biblioteca biblioteca) {
+        this.biblioteca = biblioteca;
+        configurarJanela();
         JTabbedPane abas = new JTabbedPane();
         abas.addTab("Itens", criarPainelItens());
         abas.addTab("Usuários", criarPainelUsuarios());
         abas.addTab("Empréstimos", criarPainelEmprestimos());
         add(abas);
-
         atualizarListas();
     }
 
-    public static void main(String[] args) {
-        MainGUI janela = new MainGUI();
-        janela.setVisible(true);
+    private void configurarJanela() {
+        setTitle("Biblioteca");
+        setSize(800, 600);
+        setLocationRelativeTo(null);
+        setDefaultCloseOperation(JFrame.EXIT_ON_CLOSE);
     }
 
     private JPanel criarPainelItens() {
-        campoCodigo = new JTextField();
-        campoTitulo = new JTextField();
-        campoAutor = new JTextField();
-        campoIsbn = new JTextField();
-        campoEdicao = new JTextField();
-
-        JPanel formulario = new JPanel(new GridLayout(0, 2, 5, 5));
-        formulario.add(new JLabel("Código:"));
-        formulario.add(campoCodigo);
-        formulario.add(new JLabel("Título:"));
-        formulario.add(campoTitulo);
-        formulario.add(new JLabel("Autor (só livro):"));
-        formulario.add(campoAutor);
-        formulario.add(new JLabel("ISBN (só livro):"));
-        formulario.add(campoIsbn);
-        formulario.add(new JLabel("Edição (só revista):"));
-        formulario.add(campoEdicao);
-
-        JButton botaoLivro = new JButton("Cadastrar livro");
-        botaoLivro.addActionListener(new ActionListener() {
-            @Override
-            public void actionPerformed(ActionEvent e) {
-                cadastrarLivro();
-            }
-        });
-
-        JButton botaoRevista = new JButton("Cadastrar revista");
-        botaoRevista.addActionListener(new ActionListener() {
-            @Override
-            public void actionPerformed(ActionEvent e) {
-                cadastrarRevista();
-            }
-        });
-
-        formulario.add(botaoLivro);
-        formulario.add(botaoRevista);
-
-        listaItens = new JTextArea();
+        JPanel formulario = new JPanel(new GridLayout(0, 2, 8, 8));
+        adicionarCampo(formulario, "Código:", campoCodigo);
+        adicionarCampo(formulario, "Título:", campoTitulo);
+        adicionarCampo(formulario, "Autor (livro):", campoAutor);
+        adicionarCampo(formulario, "ISBN (livro):", campoIsbn);
+        adicionarCampo(formulario, "Edição (revista):", campoEdicao);
+        JButton cadastrarLivro = criarBotao("Cadastrar livro", event -> cadastrarLivro());
+        JButton cadastrarRevista = criarBotao("Cadastrar revista", event -> cadastrarRevista());
+        formulario.add(cadastrarLivro);
+        formulario.add(cadastrarRevista);
         return montarPainel(formulario, listaItens);
     }
 
     private JPanel criarPainelUsuarios() {
-        campoIdUsuario = new JTextField();
-        campoNome = new JTextField();
-        campoEmail = new JTextField();
-
-        JPanel formulario = new JPanel(new GridLayout(0, 2, 5, 5));
-        formulario.add(new JLabel("ID:"));
-        formulario.add(campoIdUsuario);
-        formulario.add(new JLabel("Nome:"));
-        formulario.add(campoNome);
-        formulario.add(new JLabel("E-mail:"));
-        formulario.add(campoEmail);
-
-        JButton botaoUsuario = new JButton("Cadastrar usuário");
-        botaoUsuario.addActionListener(new ActionListener() {
-            @Override
-            public void actionPerformed(ActionEvent e) {
-                cadastrarUsuario();
-            }
-        });
-
+        JPanel formulario = new JPanel(new GridLayout(0, 2, 8, 8));
+        adicionarCampo(formulario, "ID:", campoIdUsuario);
+        adicionarCampo(formulario, "Nome:", campoNome);
+        adicionarCampo(formulario, "E-mail:", campoEmail);
         formulario.add(new JLabel());
-        formulario.add(botaoUsuario);
-
-        listaUsuarios = new JTextArea();
+        formulario.add(criarBotao("Cadastrar usuário", event -> cadastrarUsuario()));
         return montarPainel(formulario, listaUsuarios);
     }
 
     private JPanel criarPainelEmprestimos() {
-        campoCodigoEmprestimo = new JTextField();
-        campoIdEmprestimo = new JTextField();
-
-        JPanel formulario = new JPanel(new GridLayout(0, 2, 5, 5));
-        formulario.add(new JLabel("Código do item:"));
-        formulario.add(campoCodigoEmprestimo);
-        formulario.add(new JLabel("ID do usuário (só empréstimo):"));
-        formulario.add(campoIdEmprestimo);
-
-        JButton botaoEmprestar = new JButton("Fazer empréstimo");
-        botaoEmprestar.addActionListener(new ActionListener() {
-            @Override
-            public void actionPerformed(ActionEvent e) {
-                fazerEmprestimo();
-            }
-        });
-
-        JButton botaoDevolver = new JButton("Fazer devolução");
-        botaoDevolver.addActionListener(new ActionListener() {
-            @Override
-            public void actionPerformed(ActionEvent e) {
-                fazerDevolucao();
-            }
-        });
-
-        formulario.add(botaoEmprestar);
-        formulario.add(botaoDevolver);
-
-        listaEmprestimos = new JTextArea();
+        JPanel formulario = new JPanel(new GridLayout(0, 2, 8, 8));
+        adicionarCampo(formulario, "Código do item:", campoCodigoEmprestimo);
+        adicionarCampo(formulario, "ID do usuário:", campoIdEmprestimo);
+        formulario.add(criarBotao("Fazer empréstimo", event -> fazerEmprestimo()));
+        formulario.add(criarBotao("Fazer devolução", event -> fazerDevolucao()));
         return montarPainel(formulario, listaEmprestimos);
     }
 
-    private JPanel montarPainel(JPanel formulario, JTextArea lista) {
-        lista.setEditable(false);
+    private JButton criarBotao(String texto, java.awt.event.ActionListener acao) {
+        JButton botao = new JButton(texto);
+        botao.addActionListener(acao);
+        return botao;
+    }
 
-        JPanel painel = new JPanel(new BorderLayout(10, 10));
+    private void adicionarCampo(JPanel formulario, String rotulo, JTextField campo) {
+        formulario.add(new JLabel(rotulo));
+        formulario.add(campo);
+    }
+
+    private JPanel montarPainel(JPanel formulario, JTextArea lista) {
+        JPanel painel = new JPanel(new BorderLayout(12, 12));
         painel.add(formulario, BorderLayout.NORTH);
         painel.add(new JScrollPane(lista), BorderLayout.CENTER);
         return painel;
     }
 
     private void cadastrarLivro() {
-        try {
-            Livro livro = new Livro(campoCodigo.getText(), campoTitulo.getText(),
-                    campoAutor.getText(), campoIsbn.getText());
-            biblioteca.adicionarItem(livro);
-            mostrarMensagem("Livro salvo.");
-            limparCamposItem();
-            atualizarListas();
-        } catch (IllegalArgumentException erro) {
-            mostrarErro(erro.getMessage());
-        }
+        executarOperacao(() -> biblioteca.adicionarItem(new Livro(campoCodigo.getText().trim(),
+                campoTitulo.getText().trim(), campoAutor.getText().trim(), campoIsbn.getText().trim())),
+                "Livro salvo.", this::limparCamposItem);
     }
 
     private void cadastrarRevista() {
-        try {
-            int edicao = lerInteiro(campoEdicao.getText(), "Edição");
-            Revista revista = new Revista(campoCodigo.getText(), campoTitulo.getText(), edicao);
-            biblioteca.adicionarItem(revista);
-            mostrarMensagem("Revista salva.");
-            limparCamposItem();
-            atualizarListas();
-        } catch (IllegalArgumentException erro) {
-            mostrarErro(erro.getMessage());
-        }
+        executarOperacao(() -> biblioteca.adicionarItem(new Revista(campoCodigo.getText().trim(),
+                campoTitulo.getText().trim(), lerInteiro(campoEdicao.getText(), "Edição"))),
+                "Revista salva.", this::limparCamposItem);
     }
 
     private void cadastrarUsuario() {
-        try {
-            int id = lerInteiro(campoIdUsuario.getText(), "ID");
-            Usuario usuario = new Usuario(id, campoNome.getText(), campoEmail.getText());
-            biblioteca.adicionarUsuario(usuario);
-            mostrarMensagem("Usuário salvo.");
-            campoIdUsuario.setText("");
-            campoNome.setText("");
-            campoEmail.setText("");
-            atualizarListas();
-        } catch (IllegalArgumentException erro) {
-            mostrarErro(erro.getMessage());
-        }
+        executarOperacao(() -> biblioteca.adicionarUsuario(new Usuario(lerInteiro(campoIdUsuario.getText(), "ID"),
+                campoNome.getText().trim(), campoEmail.getText().trim())),
+                "Usuário salvo.", this::limparCamposUsuario);
     }
 
     private void fazerEmprestimo() {
         try {
-            int idUsuario = lerInteiro(campoIdEmprestimo.getText(), "ID do usuário");
-            Emprestimo emprestimo = biblioteca.emprestar(campoCodigoEmprestimo.getText(), idUsuario);
+            Emprestimo emprestimo = biblioteca.emprestar(campoCodigoEmprestimo.getText().trim(),
+                    lerInteiro(campoIdEmprestimo.getText(), "ID do usuário"));
             mostrarMensagem("Empréstimo feito em " + emprestimo.getDataEmprestimoFormatada()
                     + ".\nDevolver até " + emprestimo.getDataLimiteFormatada() + ".");
-            campoCodigoEmprestimo.setText("");
-            campoIdEmprestimo.setText("");
+            limparCamposEmprestimo();
             atualizarListas();
         } catch (ItemIndisponivelException erro) {
-            JOptionPane.showMessageDialog(this, erro.getMessage(), "Item indisponível",
-                    JOptionPane.WARNING_MESSAGE);
+            mostrarErro(erro.getMessage());
         } catch (IllegalArgumentException erro) {
             mostrarErro(erro.getMessage());
         }
     }
 
     private void fazerDevolucao() {
+        executarOperacao(() -> biblioteca.devolver(campoCodigoEmprestimo.getText().trim()),
+                "Devolução feita.", this::limparCamposEmprestimo);
+    }
+
+    private void executarOperacao(Runnable operacao, String sucesso, Runnable limpeza) {
         try {
-            biblioteca.devolver(campoCodigoEmprestimo.getText());
-            mostrarMensagem("Devolução feita.");
-            campoCodigoEmprestimo.setText("");
-            campoIdEmprestimo.setText("");
+            operacao.run();
+            mostrarMensagem(sucesso);
+            limpeza.run();
             atualizarListas();
         } catch (IllegalArgumentException erro) {
             mostrarErro(erro.getMessage());
+        }
+    }
+
+    private void atualizarListas() {
+        listaItens.setText(formatarLista(biblioteca.listarItens(), "Nenhum item cadastrado."));
+        listaUsuarios.setText(formatarLista(biblioteca.listarUsuarios(), "Nenhum usuário cadastrado."));
+        listaEmprestimos.setText(formatarLista(biblioteca.listarEmprestimos(), "Nenhum empréstimo realizado."));
+    }
+
+    private String formatarLista(Iterable<?> objetos, String mensagemVazia) {
+        StringBuilder texto = new StringBuilder();
+        for (Object objeto : objetos) {
+            texto.append(objeto).append(System.lineSeparator());
+        }
+        return texto.length() == 0 ? mensagemVazia : texto.toString();
+    }
+
+    private int lerInteiro(String texto, String nomeCampo) {
+        try {
+            return Integer.parseInt(texto.trim());
+        } catch (NumberFormatException erro) {
+            throw new IllegalArgumentException("O campo " + nomeCampo + " deve ser um número inteiro.");
         }
     }
 
@@ -252,41 +188,15 @@ public class MainGUI extends JFrame {
         campoEdicao.setText("");
     }
 
-    private void atualizarListas() {
-        String textoItens = "";
-        for (ItemBiblioteca item : biblioteca.getItens()) {
-            textoItens += item + "\n";
-        }
-        if (textoItens.isEmpty()) {
-            textoItens = "Nenhum item cadastrado.";
-        }
-        listaItens.setText(textoItens);
-
-        String textoUsuarios = "";
-        for (Usuario usuario : biblioteca.getUsuarios()) {
-            textoUsuarios += usuario + "\n";
-        }
-        if (textoUsuarios.isEmpty()) {
-            textoUsuarios = "Nenhum usuário cadastrado.";
-        }
-        listaUsuarios.setText(textoUsuarios);
-
-        String textoEmprestimos = "";
-        for (Emprestimo emprestimo : biblioteca.getEmprestimos()) {
-            textoEmprestimos += emprestimo + "\n";
-        }
-        if (textoEmprestimos.isEmpty()) {
-            textoEmprestimos = "Nenhum empréstimo realizado.";
-        }
-        listaEmprestimos.setText(textoEmprestimos);
+    private void limparCamposUsuario() {
+        campoIdUsuario.setText("");
+        campoNome.setText("");
+        campoEmail.setText("");
     }
 
-    private int lerInteiro(String texto, String nomeCampo) {
-        try {
-            return Integer.parseInt(texto.trim());
-        } catch (NumberFormatException erro) {
-            throw new IllegalArgumentException("O campo " + nomeCampo + " deve ser um número inteiro.");
-        }
+    private void limparCamposEmprestimo() {
+        campoCodigoEmprestimo.setText("");
+        campoIdEmprestimo.setText("");
     }
 
     private void mostrarErro(String mensagem) {
@@ -294,6 +204,21 @@ public class MainGUI extends JFrame {
     }
 
     private void mostrarMensagem(String mensagem) {
-        JOptionPane.showMessageDialog(this, mensagem);
+        JOptionPane.showMessageDialog(this, mensagem, "Biblioteca", JOptionPane.INFORMATION_MESSAGE);
+    }
+
+    private static JTextArea criarAreaDeLista() {
+        JTextArea area = new JTextArea();
+        area.setEditable(false);
+        area.setLineWrap(true);
+        area.setWrapStyleWord(true);
+        return area;
+    }
+
+    public static void main(String[] args) {
+        SwingUtilities.invokeLater(() -> {
+            Biblioteca biblioteca = new Biblioteca(new RepositorioBibliotecaMemoria());
+            new MainGUI(biblioteca).setVisible(true);
+        });
     }
 }

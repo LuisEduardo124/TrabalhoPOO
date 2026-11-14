@@ -1,5 +1,6 @@
 package modelo;
 
+/** Representa um item do acervo e controla sua disponibilidade. */
 public abstract class ItemBiblioteca {
     private final String codigo;
     private String titulo;

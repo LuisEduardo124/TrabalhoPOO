@@ -4,6 +4,7 @@ import java.time.LocalDateTime;
 import java.time.format.DateTimeFormatter;
 import java.time.temporal.ChronoUnit;
 
+/** Registra a relação entre um usuário e um item emprestado. */
 public class Emprestimo {
     private static final DateTimeFormatter FORMATADOR = DateTimeFormatter.ofPattern("dd/MM/yyyy HH:mm");
 
@@ -14,10 +15,20 @@ public class Emprestimo {
     private StatusEmprestimo status;
 
     public Emprestimo(ItemBiblioteca item, Usuario usuario) {
+        this(item, usuario, LocalDateTime.now(), null, StatusEmprestimo.ATIVO);
+    }
+
+    /** Reconstitui um empréstimo persistido no banco de dados. */
+    public Emprestimo(ItemBiblioteca item, Usuario usuario, LocalDateTime dataEmprestimo,
+            LocalDateTime dataDevolucao, StatusEmprestimo status) {
+        if (item == null || usuario == null || dataEmprestimo == null || status == null) {
+            throw new IllegalArgumentException("Os dados do empréstimo são obrigatórios.");
+        }
         this.item = item;
         this.usuario = usuario;
-        this.status = StatusEmprestimo.ATIVO;
-        this.dataEmprestimo = LocalDateTime.now();
+        this.status = status;
+        this.dataEmprestimo = dataEmprestimo;
+        this.dataDevolucao = dataDevolucao;
     }
 
     public ItemBiblioteca getItem() {
@@ -30,6 +41,11 @@ public class Emprestimo {
 
     public StatusEmprestimo getStatus() {
         atualizarStatus();
+        return status;
+    }
+
+    /** Retorna o status armazenado sem executar a atualização automática de vencimento. */
+    public StatusEmprestimo getStatusAtual() {
         return status;
     }
 

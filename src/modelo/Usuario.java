@@ -1,4 +1,5 @@
 package modelo;
+/** Pessoa autorizada a realizar empréstimos. */
 public class Usuario {
     private final int id;
     private String nome;
