@@ -2,38 +2,81 @@
 
 Sistema de biblioteca em Java, desenvolvido para a disciplina de Programação Orientada a Objetos. Permite cadastrar livros, revistas e usuários, listar o acervo e controlar empréstimos e devoluções, com prazo de devolução e liberação automática do item. O sistema é usado por uma interface gráfica feita em Swing.
 
+
 ## Como executar
 
-No IntelliJ, abra a pasta do projeto e execute a classe `interfacegrafica.MainGUI`.
+O Sistema Biblioteca pode ser executado em qualquer IDE compatível com Java, como IntelliJ IDEA, Eclipse, NetBeans ou Visual Studio Code, desde que o ambiente esteja configurado corretamente.
 
-Pela linha de comando (Git Bash), na raiz do repositório:
+### Requisitos
 
-```
-javac -encoding UTF-8 -d out $(find src -name "*.java")
-java -cp out interfacegrafica.MainGUI
-```
+- JDK compatível com a versão Java utilizada no projeto.
+- Driver JDBC `org.xerial:sqlite-jdbc:3.54.1.0`.
+- Arquivo `sql/schema.sql`, disponível no repositório.
+
+### Passos para execução
+
+1. Abra o projeto na IDE de sua preferência.
+2. Configure o driver SQLite JDBC nas dependências do projeto, caso ainda não esteja disponível.
+3. Na primeira execução, inicialize as tabelas do banco `biblioteca.db` utilizando o script `sql/schema.sql`.
+4. Execute a classe `interfacegrafica.MainGUI`.
+
+**Observações:**
+
+- Não é necessário instalar um servidor de banco de dados, pois o SQLite funciona diretamente com arquivos locais.
+- O banco mantém os dados cadastrados mesmo após fechar a aplicação.
+- A criação automática das tabelas ainda está em desenvolvimento.
+
 
 Não é preciso instalar nenhuma biblioteca: o Swing já vem junto com o Java.
 
+
 ## Estrutura de pacotes
 
-O código é separado por responsabilidade:
+O projeto está organizado em pacotes, separando as entidades, as regras de negócio, o armazenamento dos dados e a interface gráfica.
 
-```
+```text
 src/
-  modelo/            ItemBiblioteca, Livro, Revista, Usuario, Emprestimo,
-                     StatusEmprestimo, ItemIndisponivelException
-  servico/           Biblioteca
-  interfacegrafica/  MainGUI
+  modelo/
+    ItemBiblioteca.java
+    Livro.java
+    Revista.java
+    Usuario.java
+    Emprestimo.java
+    StatusEmprestimo.java
+    ItemIndisponivelException.java
+
+  servico/
+    Biblioteca.java
+    RepositorioBiblioteca.java
+    RepositorioBibliotecaMemoria.java
+    RepositorioBibliotecaSQLite.java
+    ConexaoSQLite.java
+
+  interfacegrafica/
+    MainGUI.java
 ```
 
 | Pacote | Responsabilidade |
 |---|---|
-| `modelo` | As classes do domínio. Cada uma guarda seus dados e valida as próprias regras (código, título, ISBN, e-mail etc.). |
-| `servico` | A `Biblioteca`, que guarda as listas e aplica as regras de negócio: cadastro sem repetição, empréstimo e devolução. |
-| `interfacegrafica` | A tela. Só lê os campos, chama a `Biblioteca` e mostra os resultados e os erros. Não tem regra de negócio. |
+| `modelo` | Contém as entidades do sistema e suas validações, como `ItemBiblioteca`, `Livro`, `Revista`, `Usuario` e `Emprestimo`. |
+| `servico` | Contém as regras de negócio, a interface `RepositorioBiblioteca`, suas implementações em memória e SQLite e o gerenciamento das conexões com o banco. |
+| `interfacegrafica` | Contém a interface Swing, responsável pela interação com o usuário, cadastros, consultas e apresentação dos resultados. |
 
-A dependência vai em um sentido só: `interfacegrafica` usa `servico` e `modelo`, `servico` usa `modelo`, e `modelo` não depende de ninguém.
+### Organização arquitetural
+
+O sistema utiliza uma separação de responsabilidades inspirada na **Clean Architecture** e nos princípios **SOLID**.
+
+A classe `Biblioteca` depende da interface `RepositorioBiblioteca`, permitindo utilizar diferentes implementações de armazenamento sem alterar as regras de negócio.
+
+Atualmente, estão disponíveis duas implementações:
+
+- **`RepositorioBibliotecaMemoria`:** armazena os dados temporariamente durante a execução, sendo útil para testes.
+- **`RepositorioBibliotecaSQLite`:** utiliza o SQLite para armazenar os dados permanentemente.
+
+A classe `ConexaoSQLite` centraliza a abertura das conexões com o banco de dados e a ativação das chaves estrangeiras.
+
+Essa organização aplica o princípio de **Inversão de Dependência (DIP)**, reduzindo o acoplamento entre as regras de negócio e a tecnologia de persistência.
+
 
 ## Classes principais
 
@@ -92,7 +135,7 @@ O histórico de empréstimos é mantido, inclusive dos devolvidos ou expirados.
 | Polimorfismo | `Biblioteca` guarda uma `List<ItemBiblioteca>` com livros e revistas e chama `getTipo()` e `toString()` sem conhecer o tipo concreto. |
 | Palavra `super` | Os construtores de `Livro` e `Revista` chamam `super(codigo, titulo)`, e o `toString()` deles reaproveita `super.toString()`. A exceção própria chama `super(mensagem)`. |
 | Abstração | `ItemBiblioteca` é abstrata e declara `getTipo()`, então não pode ser instanciada diretamente. |
-| Interfaces | Não há interface própria: nenhuma regra do sistema varia (o prazo é igual para livros e revistas), e criar uma só para marcar o item seria forçar o conceito. Ira ser implementada interface na fase 2. |
+| Interfaces | **Interfaces:** o projeto utiliza `RepositorioBiblioteca`, uma interface que define as operações de armazenamento. Ela possui duas implementações: `RepositorioBibliotecaMemoria` e `RepositorioBibliotecaSQLite`, demonstrando abstração e inversão de dependência (DIP).|
 | Enum | `StatusEmprestimo` (`ATIVO`, `DEVOLVIDO`, `EXPIRADO`) guarda a situação de cada `Emprestimo`, no lugar de um `boolean`. |
 | Tratamento de exceções | As classes do `modelo` e a `Biblioteca` lançam `IllegalArgumentException` para dados inválidos e a exceção própria `ItemIndisponivelException` para item já emprestado. A `MainGUI` trata tudo com `try/catch` e mostra a mensagem na tela. |
 | Interface gráfica | Feita em Swing (`MainGUI`), com abas, formulários, botões, listas e caixas de mensagem (`JOptionPane`). |
@@ -124,6 +167,10 @@ O histórico de empréstimos é mantido, inclusive dos devolvidos ou expirados.
 - histórico de empréstimos durante a execução;
 - validação dos dados e mensagens de erro.
 
-## Observação
+## Persistência de dados
 
-Ao fechar a aplicação, os dados são perdidos. A persistência em banco está somente na outra versão do projeto.
+O Sistema Biblioteca utiliza SQLite para manter os registros de livros, revistas, usuários e empréstimos entre as execuções da aplicação.
+
+Os dados são armazenados localmente no arquivo `biblioteca.db`, que não é versionado no GitHub. A estrutura do banco está disponível no arquivo `sql/schema.sql`, permitindo a criação das tabelas em outros ambientes.
+
+A implementação `RepositorioBibliotecaMemoria` foi preservada como alternativa para testes sem persistência.
