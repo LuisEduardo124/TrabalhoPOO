@@ -1,9 +1,11 @@
 package interfacegrafica;
 
 import java.awt.BorderLayout;
+import java.awt.CardLayout;
 import java.awt.GridLayout;
 
 import javax.swing.JButton;
+import javax.swing.JComboBox;
 import javax.swing.JFrame;
 import javax.swing.JLabel;
 import javax.swing.JOptionPane;
@@ -79,16 +81,48 @@ public class MainGUI extends JFrame {
     }
 
     private JPanel criarPainelItens() {
-        JPanel formulario = new JPanel(new GridLayout(0, 2, 8, 8));
-        adicionarCampo(formulario, "Código:", campoCodigo);
-        adicionarCampo(formulario, "Título:", campoTitulo);
-        adicionarCampo(formulario, "Autor (livro):", campoAutor);
-        adicionarCampo(formulario, "ISBN (livro):", campoIsbn);
-        adicionarCampo(formulario, "Edição (revista):", campoEdicao);
-        JButton cadastrarLivro = criarBotao("Cadastrar livro", event -> cadastrarLivro());
-        JButton cadastrarRevista = criarBotao("Cadastrar revista", event -> cadastrarRevista());
-        formulario.add(cadastrarLivro);
-        formulario.add(cadastrarRevista);
+        JPanel formulario = new JPanel(new BorderLayout(0, 8));
+
+        JComboBox<String> seletorTipo = new JComboBox<>(new String[]{"Livro", "Revista"});
+
+        JPanel camposComuns = new JPanel(new GridLayout(0, 2, 8, 8));
+        camposComuns.add(new JLabel("Tipo de item:"));
+        camposComuns.add(seletorTipo);
+        adicionarCampo(camposComuns, "Código:", campoCodigo);
+        adicionarCampo(camposComuns, "Título:", campoTitulo);
+
+        JPanel camposLivro = new JPanel(new GridLayout(0, 2, 8, 8));
+        adicionarCampo(camposLivro, "Autor:", campoAutor);
+        adicionarCampo(camposLivro, "ISBN:", campoIsbn);
+
+        JPanel camposRevista = new JPanel(new GridLayout(0, 2, 8, 8));
+        adicionarCampo(camposRevista, "Edição:", campoEdicao);
+
+        CardLayout layoutTipo = new CardLayout();
+        JPanel camposPorTipo = new JPanel(layoutTipo);
+        camposPorTipo.add(camposLivro, "Livro");
+        camposPorTipo.add(camposRevista, "Revista");
+
+        seletorTipo.addActionListener(event -> {
+            String tipo = (String) seletorTipo.getSelectedItem();
+            layoutTipo.show(camposPorTipo, tipo);
+        });
+
+        JButton botaoCadastrar = criarBotao("Cadastrar", event -> {
+            if ("Livro".equals(seletorTipo.getSelectedItem())) {
+                cadastrarLivro();
+            } else {
+                cadastrarRevista();
+            }
+        });
+
+        JPanel acoes = new JPanel(new BorderLayout());
+        acoes.add(botaoCadastrar, BorderLayout.LINE_END);
+
+        formulario.add(camposComuns, BorderLayout.NORTH);
+        formulario.add(camposPorTipo, BorderLayout.CENTER);
+        formulario.add(acoes, BorderLayout.SOUTH);
+
         return montarPainel(formulario, tabelaItens);
     }
 
