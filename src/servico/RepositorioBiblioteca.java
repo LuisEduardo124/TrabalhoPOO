@@ -69,4 +69,12 @@ public interface RepositorioBiblioteca {
      * @return o usuário encontrado ou {@code null} se o ID não estiver cadastrado
      */
     Usuario buscarUsuario(int id);
+
+    /**
+     * Atualiza o status e a data de devolução de um empréstimo,
+     * além da disponibilidade do item correspondente.
+     *
+     * @param emprestimo empréstimo com os dados atualizados
+     */
+    void atualizarEmprestimo(Emprestimo emprestimo);
 }

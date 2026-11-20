@@ -99,14 +99,16 @@ public class Biblioteca {
      * @throws IllegalArgumentException se não houver empréstimo ativo para o item
      */
     public void devolver(String codigoItem) {
+        atualizarEmprestimos();
+
         Emprestimo emprestimo = repositorio.listarEmprestimos().stream()
                 .filter(registro -> registro.isAtivo())
                 .filter(registro -> registro.getItem().getCodigo().equals(codigoItem))
                 .findFirst()
                 .orElseThrow(() -> new IllegalArgumentException("Não existe empréstimo ativo para esse item."));
         emprestimo.devolver();
+        repositorio.atualizarEmprestimo(emprestimo);
     }
-
     private void exigirItemNovo(ItemBiblioteca item) {
         if (item == null) {
             throw new IllegalArgumentException("Item inválido.");
@@ -133,6 +135,14 @@ public class Biblioteca {
     }
 
     private void atualizarEmprestimos() {
-        repositorio.listarEmprestimos().forEach(Emprestimo::atualizarStatus);
+        for (Emprestimo emprestimo : repositorio.listarEmprestimos()) {
+            modelo.StatusEmprestimo statusAnterior = emprestimo.getStatusAtual();
+
+            emprestimo.atualizarStatus();
+
+            if (statusAnterior != emprestimo.getStatusAtual()) {
+                repositorio.atualizarEmprestimo(emprestimo);
+            }
+        }
     }
 }

@@ -1,0 +1,5 @@
+﻿# Banco de dados SQLite local
+*.db
+*.db-journal
+*.db-wal
+*.db-shm

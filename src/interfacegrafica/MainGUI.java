@@ -27,7 +27,7 @@ import modelo.Livro;
 import modelo.Revista;
 import modelo.Usuario;
 import servico.Biblioteca;
-import servico.RepositorioBibliotecaMemoria;
+import servico.RepositorioBibliotecaSQLite;
 
 /**
  * Janela principal da biblioteca, feita em Swing.
@@ -286,7 +286,7 @@ public class MainGUI extends JFrame {
      */
     public static void main(String[] args) {
         SwingUtilities.invokeLater(() -> {
-            Biblioteca biblioteca = new Biblioteca(new RepositorioBibliotecaMemoria());
+            Biblioteca biblioteca = new Biblioteca(new RepositorioBibliotecaSQLite());
             new MainGUI(biblioteca).setVisible(true);
         });
     }

@@ -76,4 +76,15 @@ public class RepositorioBibliotecaMemoria implements RepositorioBiblioteca {
                 .findFirst()
                 .orElse(null);
     }
+
+    /**
+     * Na implementação em memória, o objeto já está armazenado na lista.
+     * Portanto, suas alterações já ficam refletidas no repositório.
+     *
+     * @param emprestimo empréstimo atualizado
+     */
+    @Override
+    public void atualizarEmprestimo(Emprestimo emprestimo) {
+        // Não precisa atualizar a lista: o objeto já foi modificado.
+    }
 }
