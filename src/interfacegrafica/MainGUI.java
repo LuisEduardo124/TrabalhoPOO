@@ -23,7 +23,10 @@ import modelo.Usuario;
 import servico.Biblioteca;
 import servico.RepositorioBibliotecaMemoria;
 
-/** Interface Swing da versão em memória da biblioteca. */
+/**
+ * Janela principal da biblioteca, feita em Swing.
+ * Organiza os cadastros e empréstimos em abas e exibe os resultados das operações.
+ */
 public class MainGUI extends JFrame {
     private final Biblioteca biblioteca;
     private final JTextField campoCodigo = new JTextField();
@@ -40,6 +43,11 @@ public class MainGUI extends JFrame {
     private final JTextArea listaUsuarios = criarAreaDeLista();
     private final JTextArea listaEmprestimos = criarAreaDeLista();
 
+    /**
+     * Monta as abas de itens, usuários e empréstimos e carrega as listas iniciais.
+     *
+     * @param biblioteca serviço usado para consultar dados e executar operações
+     */
     public MainGUI(Biblioteca biblioteca) {
         this.biblioteca = biblioteca;
         configurarJanela();
@@ -215,6 +223,12 @@ public class MainGUI extends JFrame {
         return area;
     }
 
+    /**
+     * Inicia a aplicação com um repositório em memória e abre a janela
+     * principal na thread de eventos do Swing.
+     *
+     * @param args argumentos da linha de comando, não utilizados
+     */
     public static void main(String[] args) {
         SwingUtilities.invokeLater(() -> {
             Biblioteca biblioteca = new Biblioteca(new RepositorioBibliotecaMemoria());
