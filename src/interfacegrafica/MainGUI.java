@@ -13,6 +13,10 @@ import javax.swing.JTabbedPane;
 import javax.swing.JTextArea;
 import javax.swing.JTextField;
 import javax.swing.SwingUtilities;
+import javax.swing.JComponent;
+import javax.swing.JTable;
+import javax.swing.table.DefaultTableModel;
+
 
 import modelo.Emprestimo;
 import modelo.ItemBiblioteca;
@@ -39,9 +43,17 @@ public class MainGUI extends JFrame {
     private final JTextField campoEmail = new JTextField();
     private final JTextField campoCodigoEmprestimo = new JTextField();
     private final JTextField campoIdEmprestimo = new JTextField();
-    private final JTextArea listaItens = criarAreaDeLista();
-    private final JTextArea listaUsuarios = criarAreaDeLista();
     private final JTextArea listaEmprestimos = criarAreaDeLista();
+    private final JTextArea listaUsuarios = criarAreaDeLista();
+    private final DefaultTableModel modeloItens = new DefaultTableModel(
+            new String[]{"Código", "Título", "Tipo", "Disponibilidade"}, 0) {
+        @Override
+        public boolean isCellEditable(int linha, int coluna) {
+            return false;
+        }
+    };
+
+    private final JTable tabelaItens = new JTable(modeloItens);
 
     /**
      * Monta as abas de itens, usuários e empréstimos e carrega as listas iniciais.
@@ -77,7 +89,7 @@ public class MainGUI extends JFrame {
         JButton cadastrarRevista = criarBotao("Cadastrar revista", event -> cadastrarRevista());
         formulario.add(cadastrarLivro);
         formulario.add(cadastrarRevista);
-        return montarPainel(formulario, listaItens);
+        return montarPainel(formulario, tabelaItens);
     }
 
     private JPanel criarPainelUsuarios() {
@@ -110,7 +122,7 @@ public class MainGUI extends JFrame {
         formulario.add(campo);
     }
 
-    private JPanel montarPainel(JPanel formulario, JTextArea lista) {
+    private JPanel montarPainel(JPanel formulario, JComponent lista) {
         JPanel painel = new JPanel(new BorderLayout(12, 12));
         painel.add(formulario, BorderLayout.NORTH);
         painel.add(new JScrollPane(lista), BorderLayout.CENTER);
@@ -167,7 +179,16 @@ public class MainGUI extends JFrame {
     }
 
     private void atualizarListas() {
-        listaItens.setText(formatarLista(biblioteca.listarItens(), "Nenhum item cadastrado."));
+        modeloItens.setRowCount(0);
+
+        for (ItemBiblioteca item : biblioteca.listarItens()) {
+            modeloItens.addRow(new Object[]{
+                    item.getCodigo(),
+                    item.getTitulo(),
+                    item.getTipo(),
+                    item.isDisponivel() ? "Disponível" : "Emprestado"
+            });
+        }
         listaUsuarios.setText(formatarLista(biblioteca.listarUsuarios(), "Nenhum usuário cadastrado."));
         listaEmprestimos.setText(formatarLista(biblioteca.listarEmprestimos(), "Nenhum empréstimo realizado."));
     }
