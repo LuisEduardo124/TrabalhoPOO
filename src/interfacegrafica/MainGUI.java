@@ -27,6 +27,7 @@ import modelo.Livro;
 import modelo.Revista;
 import modelo.Usuario;
 import servico.Biblioteca;
+import servico.InicializadorBancoSQLite;
 import servico.RepositorioBibliotecaSQLite;
 
 /**
@@ -34,19 +35,33 @@ import servico.RepositorioBibliotecaSQLite;
  * Organiza os cadastros e empréstimos em abas e exibe os resultados das operações.
  */
 public class MainGUI extends JFrame {
+    /** Serviço de regras de negócio usado pela janela. */
     private final Biblioteca biblioteca;
+    /** Campos do formulário de itens e usuários. */
     private final JTextField campoCodigo = new JTextField();
+    /** Campo de título. */
     private final JTextField campoTitulo = new JTextField();
+    /** Campo de autor. */
     private final JTextField campoAutor = new JTextField();
+    /** Campo de ISBN. */
     private final JTextField campoIsbn = new JTextField();
+    /** Campo de edição. */
     private final JTextField campoEdicao = new JTextField();
+    /** Campo de identificador do usuário. */
     private final JTextField campoIdUsuario = new JTextField();
+    /** Campo de nome do usuário. */
     private final JTextField campoNome = new JTextField();
+    /** Campo de e-mail do usuário. */
     private final JTextField campoEmail = new JTextField();
+    /** Campos usados para consultar empréstimos e registrar devoluções. */
     private final JTextField campoCodigoEmprestimo = new JTextField();
+    /** Campo de identificador do empréstimo. */
     private final JTextField campoIdEmprestimo = new JTextField();
+    /** Áreas que exibem usuários e empréstimos. */
     private final JTextArea listaEmprestimos = criarAreaDeLista();
+    /** Área de listagem de usuários. */
     private final JTextArea listaUsuarios = criarAreaDeLista();
+    /** Modelo não editável da tabela de itens. */
     private final DefaultTableModel modeloItens = new DefaultTableModel(
             new String[]{"Código", "Título", "Tipo", "Disponibilidade"}, 0) {
         @Override
@@ -55,6 +70,7 @@ public class MainGUI extends JFrame {
         }
     };
 
+    /** Tabela que exibe o acervo cadastrado. */
     private final JTable tabelaItens = new JTable(modeloItens);
 
     /**
@@ -285,6 +301,13 @@ public class MainGUI extends JFrame {
      * @param args argumentos da linha de comando, não utilizados
      */
     public static void main(String[] args) {
+        try {
+            InicializadorBancoSQLite.inicializar();
+        } catch (IllegalStateException erro) {
+            JOptionPane.showMessageDialog(null, erro.getMessage(), "Erro ao iniciar", JOptionPane.ERROR_MESSAGE);
+            return;
+        }
+
         SwingUtilities.invokeLater(() -> {
             Biblioteca biblioteca = new Biblioteca(new RepositorioBibliotecaSQLite());
             new MainGUI(biblioteca).setVisible(true);

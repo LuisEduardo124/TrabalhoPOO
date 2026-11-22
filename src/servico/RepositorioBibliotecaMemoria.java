@@ -19,6 +19,13 @@ public class RepositorioBibliotecaMemoria implements RepositorioBiblioteca {
     private final List<Usuario> usuarios = new ArrayList<>();
     private final List<Emprestimo> emprestimos = new ArrayList<>();
 
+    /**
+     * Cria um repositório vazio, mantido somente na memória.
+     */
+    public RepositorioBibliotecaMemoria() {
+        // As listas são inicializadas nos atributos.
+    }
+
     /** {@inheritDoc} */
     @Override
     public List<ItemBiblioteca> listarItens() {

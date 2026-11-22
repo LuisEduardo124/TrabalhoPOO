@@ -18,6 +18,13 @@ import java.util.List;
  */
 public class RepositorioBibliotecaSQLite implements RepositorioBiblioteca {
 
+    /**
+     * Cria um repositório que persiste os dados no banco SQLite padrão.
+     */
+    public RepositorioBibliotecaSQLite() {
+        // A conexão é aberta por operação para manter os recursos fechados.
+    }
+
     @Override
     public void salvarItem(ItemBiblioteca item) {
         String sql = """

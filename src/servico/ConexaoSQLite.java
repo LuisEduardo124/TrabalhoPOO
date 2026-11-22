@@ -13,6 +13,14 @@ public class ConexaoSQLite {
     private static final String URL = "jdbc:sqlite:biblioteca.db";
 
     /**
+     * Impede a criação de instâncias, pois a classe oferece apenas operações
+     * estáticas de conexão.
+     */
+    private ConexaoSQLite() {
+        // Classe utilitária.
+    }
+
+    /**
      * Abre uma conexão com o banco e ativa as chaves estrangeiras.
      *
      * @return conexão aberta com o SQLite
