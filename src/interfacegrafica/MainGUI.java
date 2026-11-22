@@ -3,6 +3,8 @@ package interfacegrafica;
 import java.awt.BorderLayout;
 import java.awt.CardLayout;
 import java.awt.GridLayout;
+import java.awt.*;
+
 
 import javax.swing.JButton;
 import javax.swing.JComboBox;
@@ -18,7 +20,10 @@ import javax.swing.SwingUtilities;
 import javax.swing.JComponent;
 import javax.swing.JTable;
 import javax.swing.table.DefaultTableModel;
-
+import javax.swing.UIManager;
+import javax.swing.BorderFactory;
+import javax.swing.border.Border;
+import javax.swing.border.AbstractBorder;
 
 import modelo.Emprestimo;
 import modelo.ItemBiblioteca;
@@ -37,6 +42,10 @@ import servico.RepositorioBibliotecaSQLite;
 public class MainGUI extends JFrame {
     /** Serviço de regras de negócio usado pela janela. */
     private final Biblioteca biblioteca;
+    private boolean modoEscuro = false;
+    private JTabbedPane abas;
+    private final JButton botaoTema =
+            new BotaoArredondado("☾ Modo escuro");
     /** Campos do formulário de itens e usuários. */
     private final JTextField campoCodigo = new JTextField();
     /** Campo de título. */
@@ -81,19 +90,210 @@ public class MainGUI extends JFrame {
     public MainGUI(Biblioteca biblioteca) {
         this.biblioteca = biblioteca;
         configurarJanela();
-        JTabbedPane abas = new JTabbedPane();
+        abas = new JTabbedPane();
         abas.addTab("Itens", criarPainelItens());
         abas.addTab("Usuários", criarPainelUsuarios());
         abas.addTab("Empréstimos", criarPainelEmprestimos());
-        add(abas);
+        JPanel cabecalho = new JPanel(new FlowLayout(FlowLayout.RIGHT, 12, 8));
+        cabecalho.add(botaoTema);
+
+        botaoTema.addActionListener(e -> {
+            modoEscuro = !modoEscuro;
+            aplicarTema();
+        });
+
+        add(cabecalho, BorderLayout.NORTH);
+        abas.setFont(new Font("Segoe UI", Font.PLAIN, 14));
+
+        tabelaItens.setFont(new Font("Segoe UI", Font.PLAIN, 13));
+        tabelaItens.setRowHeight(30);
+        tabelaItens.setShowVerticalLines(false);
+        tabelaItens.setShowHorizontalLines(false);
+        tabelaItens.setFillsViewportHeight(true);
+
+        tabelaItens.getTableHeader().setFont(
+                new Font("Segoe UI", Font.BOLD, 13)
+        );
+        tabelaItens.getTableHeader().setPreferredSize(
+                new Dimension(0, 36)
+        );
+        add(abas, BorderLayout.CENTER);
+
+        aplicarTema();
         atualizarListas();
     }
 
+    private Border criarBordaArredondada() {
+        return new AbstractBorder() {
+            @Override
+            public void paintBorder(
+                    Component c, Graphics g,
+                    int x, int y, int width, int height) {
+
+                Graphics2D g2 = (Graphics2D) g.create();
+
+                g2.setRenderingHint(
+                        RenderingHints.KEY_ANTIALIASING,
+                        RenderingHints.VALUE_ANTIALIAS_ON
+                );
+
+                g2.setColor(modoEscuro
+                        ? new Color(90, 96, 102)
+                        : new Color(195, 200, 198));
+
+                g2.drawRoundRect(
+                        x, y, width - 1, height - 1,
+                        16, 16
+                );
+
+                g2.dispose();
+            }
+
+            @Override
+            public Insets getBorderInsets(Component c) {
+                return new Insets(7, 12, 7, 12);
+            }
+
+            @Override
+            public Insets getBorderInsets(Component c, Insets insets) {
+                insets.set(7, 12, 7, 12);
+                return insets;
+            }
+        };
+    }
+
+    private JButton criarBotaoArredondado(JButton botao) {
+        botao.setContentAreaFilled(false);
+        botao.setFocusPainted(false);
+        botao.setBorderPainted(false);
+        botao.setOpaque(false);
+
+        botao.setBorder(
+                BorderFactory.createEmptyBorder(9, 18, 9, 18)
+        );
+
+        return botao;
+    }
+
+    private void aplicarTema() {
+        Color fundo = modoEscuro
+                ? new Color(35, 38, 42)
+                : new Color(248, 248, 246);
+
+        Color campo = modoEscuro
+                ? new Color(50, 54, 59)
+                : Color.WHITE;
+
+        Color texto = modoEscuro
+                ? new Color(235, 235, 235)
+                : new Color(35, 35, 35);
+
+        aplicarCores(getContentPane(), fundo, campo, texto);
+
+        botaoTema.setText(modoEscuro ? "☀ Modo claro" : "☾ Modo escuro");
+        Color fundoAbas = modoEscuro
+                ? new Color(43, 47, 51)
+                : new Color(244, 246, 245);
+
+        Color textoAbas = modoEscuro
+                ? Color.WHITE
+                : new Color(35, 35, 35);
+
+        abas.setBackground(fundoAbas);
+        abas.setForeground(textoAbas);
+
+        for (int i = 0; i < abas.getTabCount(); i++) {
+            abas.setBackgroundAt(i, fundoAbas);
+            abas.setForegroundAt(i, textoAbas);
+        }
+        repaint();
+    }
+
+    private void aplicarCores(
+            Component componente,
+            Color fundo,
+            Color campo,
+            Color texto) {
+
+        if (componente instanceof JTextField
+                || componente instanceof JTextArea
+                || componente instanceof JComboBox) {
+
+            if (componente instanceof JTextField campoTexto) {
+                campoTexto.setCaretColor(texto);
+                campoTexto.setBorder(criarBordaArredondada());
+            }
+
+            componente.setBackground(campo);
+            componente.setForeground(texto);
+        } else if (componente instanceof JTable tabela) {
+
+            tabela.setBackground(campo);
+            tabela.setForeground(texto);
+
+            tabela.setGridColor(
+                    modoEscuro
+                            ? new Color(65, 70, 75)
+                            : new Color(225, 228, 230)
+            );
+
+            tabela.setSelectionBackground(
+                    modoEscuro
+                            ? new Color(48, 105, 91)
+                            : new Color(214, 235, 227)
+            );
+
+            tabela.setSelectionForeground(
+                    modoEscuro ? Color.WHITE : new Color(35, 55, 47)
+            );
+
+            tabela.getTableHeader().setBackground(
+                    modoEscuro
+                            ? new Color(43, 47, 51)
+                            : new Color(244, 246, 245)
+            );
+
+            tabela.getTableHeader().setForeground(texto);
+
+            tabela.getTableHeader().setBorder(
+                    BorderFactory.createMatteBorder(
+                            0, 0, 1, 0,
+                            modoEscuro
+                                    ? new Color(75, 80, 85)
+                                    : new Color(215, 220, 218)
+                    )
+            );
+
+        } else if (componente instanceof JButton botao) {
+
+            botao.setBackground(new Color(55, 145, 115));
+            botao.setForeground(Color.WHITE);
+
+            if (!(botao instanceof BotaoArredondado)) {
+                botao.setOpaque(true);
+            }
+
+        } else {
+            componente.setBackground(fundo);
+            componente.setForeground(texto);
+        }
+
+        if (componente instanceof Container container) {
+            for (Component filho : container.getComponents()) {
+                aplicarCores(filho, fundo, campo, texto);
+            }
+        }
+    }
+
     private void configurarJanela() {
-        setTitle("Biblioteca");
-        setSize(800, 600);
+        setTitle("Biblioteca - Sistema de Gestão de Acervo");
+        setSize(960, 720);
+        setMinimumSize(new Dimension(800, 600));
         setLocationRelativeTo(null);
         setDefaultCloseOperation(JFrame.EXIT_ON_CLOSE);
+
+        UIManager.put("Label.font", new Font("Segoe UI", Font.PLAIN, 14));
+        UIManager.put("Button.font", new Font("Segoe UI", Font.PLAIN, 14));
     }
 
     private JPanel criarPainelItens() {
@@ -162,8 +362,9 @@ public class MainGUI extends JFrame {
     }
 
     private JButton criarBotao(String texto, java.awt.event.ActionListener acao) {
-        JButton botao = new JButton(texto);
+        JButton botao = new BotaoArredondado(texto);
         botao.addActionListener(acao);
+        botao.setPreferredSize(new Dimension(140, 36));
         return botao;
     }
 
@@ -174,8 +375,15 @@ public class MainGUI extends JFrame {
 
     private JPanel montarPainel(JPanel formulario, JComponent lista) {
         JPanel painel = new JPanel(new BorderLayout(12, 12));
+        painel.setBorder(BorderFactory.createEmptyBorder(12, 14, 14, 14));
+
+        formulario.setBorder(
+                BorderFactory.createEmptyBorder(10, 8, 14, 8)
+        );
+
         painel.add(formulario, BorderLayout.NORTH);
         painel.add(new JScrollPane(lista), BorderLayout.CENTER);
+
         return painel;
     }
 
