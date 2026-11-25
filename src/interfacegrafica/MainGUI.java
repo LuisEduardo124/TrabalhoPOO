@@ -1,9 +1,16 @@
 package interfacegrafica;
 
-import java.awt.BorderLayout;
-import java.awt.CardLayout;
-import java.awt.GridLayout;
 import java.awt.*;
+
+import java.awt.event.KeyEvent;
+import java.util.List;
+import java.util.concurrent.Callable;
+import java.util.concurrent.ExecutionException;
+import java.util.function.Supplier;
+import java.util.logging.Level;
+import java.util.logging.Logger;
+
+import javax.swing.AbstractAction;
 
 
 import javax.swing.JButton;
@@ -24,6 +31,8 @@ import javax.swing.UIManager;
 import javax.swing.BorderFactory;
 import javax.swing.border.Border;
 import javax.swing.border.AbstractBorder;
+import javax.swing.KeyStroke;
+import javax.swing.SwingWorker;
 
 import modelo.Emprestimo;
 import modelo.ItemBiblioteca;
@@ -42,8 +51,17 @@ import servico.RepositorioBibliotecaSQLite;
 public class MainGUI extends JFrame {
     /** Serviço de regras de negócio usado pela janela. */
     private final Biblioteca biblioteca;
+    private static final Logger LOGGER = Logger.getLogger(MainGUI.class.getName());
+    private static final Color COR_DESTAQUE = new Color(55, 145, 115);
     private boolean modoEscuro = false;
     private JTabbedPane abas;
+        /** Botões que disparam operações; ficam desabilitados enquanto algo roda em segundo plano. */
+    private final List<JButton> botoesAcao = new java.util.ArrayList<>();
+    /** Quantidade de operações em segundo plano ainda em andamento. */
+    private int operacoesEmAndamento = 0;
+    private JButton botaoCadastrarItem;
+    private JButton botaoCadastrarUsuario;
+    private JButton botaoEmprestar;
     private final JButton botaoTema =
             new BotaoArredondado("☾ Modo escuro");
     /** Campos do formulário de itens e usuários. */
@@ -97,10 +115,9 @@ public class MainGUI extends JFrame {
         JPanel cabecalho = new JPanel(new FlowLayout(FlowLayout.RIGHT, 12, 8));
         cabecalho.add(botaoTema);
 
-        botaoTema.addActionListener(e -> {
-            modoEscuro = !modoEscuro;
-            aplicarTema();
-        });
+            botaoTema.setMnemonic(KeyEvent.VK_T);
+        botaoTema.addActionListener(e -> alternarTema());
+        configurarAtalhos();
 
         add(cabecalho, BorderLayout.NORTH);
         abas.setFont(new Font("Segoe UI", Font.PLAIN, 14));
@@ -120,7 +137,35 @@ public class MainGUI extends JFrame {
         add(abas, BorderLayout.CENTER);
 
         aplicarTema();
+        atualizarBotaoPadrao();
         atualizarListas();
+    }
+    private void alternarTema() {
+        modoEscuro = !modoEscuro;
+        aplicarTema();
+    }
+
+    /** Registra atalhos globais: Ctrl+T alterna o tema e a troca de aba atualiza o botão do Enter. */
+    private void configurarAtalhos() {
+        getRootPane().getInputMap(JComponent.WHEN_IN_FOCUSED_WINDOW).put(
+                KeyStroke.getKeyStroke(KeyEvent.VK_T, KeyEvent.CTRL_DOWN_MASK), "alternarTema");
+        getRootPane().getActionMap().put("alternarTema", new AbstractAction() {
+            @Override
+            public void actionPerformed(java.awt.event.ActionEvent evento) {
+                alternarTema();
+            }
+        });
+        abas.addChangeListener(evento -> atualizarBotaoPadrao());
+    }
+
+    /** Faz a tecla Enter acionar o botão principal da aba que está aberta. */
+    private void atualizarBotaoPadrao() {
+        JButton padrao = switch (abas.getSelectedIndex()) {
+            case 0 -> botaoCadastrarItem;
+            case 1 -> botaoCadastrarUsuario;
+            default -> botaoEmprestar;
+        };
+        getRootPane().setDefaultButton(padrao);
     }
 
     private Border criarBordaArredondada() {
@@ -137,12 +182,14 @@ public class MainGUI extends JFrame {
                         RenderingHints.VALUE_ANTIALIAS_ON
                 );
 
-                g2.setColor(modoEscuro
+                boolean comFoco = c.hasFocus();
+                g2.setColor(comFoco ? COR_DESTAQUE : modoEscuro
                         ? new Color(90, 96, 102)
                         : new Color(195, 200, 198));
+                g2.setStroke(new BasicStroke(comFoco ? 2.5f : 1f));
 
                 g2.drawRoundRect(
-                        x, y, width - 1, height - 1,
+                        x + 1, y + 1, width - 3, height - 3,
                         16, 16
                 );
 
@@ -294,6 +341,7 @@ public class MainGUI extends JFrame {
 
         UIManager.put("Label.font", new Font("Segoe UI", Font.PLAIN, 14));
         UIManager.put("Button.font", new Font("Segoe UI", Font.PLAIN, 14));
+        UIManager.put("Button.disabledText", new Color(235, 240, 238));
     }
 
     private JPanel criarPainelItens() {
@@ -324,7 +372,7 @@ public class MainGUI extends JFrame {
             layoutTipo.show(camposPorTipo, tipo);
         });
 
-        JButton botaoCadastrar = criarBotao("Cadastrar", event -> {
+                botaoCadastrarItem = criarBotao("Cadastrar", KeyEvent.VK_C, event -> {
             if ("Livro".equals(seletorTipo.getSelectedItem())) {
                 cadastrarLivro();
             } else {
@@ -333,7 +381,7 @@ public class MainGUI extends JFrame {
         });
 
         JPanel acoes = new JPanel(new BorderLayout());
-        acoes.add(botaoCadastrar, BorderLayout.LINE_END);
+        acoes.add(botaoCadastrarItem, BorderLayout.LINE_END);
 
         formulario.add(camposComuns, BorderLayout.NORTH);
         formulario.add(camposPorTipo, BorderLayout.CENTER);
@@ -348,7 +396,8 @@ public class MainGUI extends JFrame {
         adicionarCampo(formulario, "Nome:", campoNome);
         adicionarCampo(formulario, "E-mail:", campoEmail);
         formulario.add(new JLabel());
-        formulario.add(criarBotao("Cadastrar usuário", event -> cadastrarUsuario()));
+        botaoCadastrarUsuario = criarBotao("Cadastrar usuário", KeyEvent.VK_U, event -> cadastrarUsuario());
+        formulario.add(botaoCadastrarUsuario);
         return montarPainel(formulario, listaUsuarios);
     }
 
@@ -356,21 +405,37 @@ public class MainGUI extends JFrame {
         JPanel formulario = new JPanel(new GridLayout(0, 2, 8, 8));
         adicionarCampo(formulario, "Código do item:", campoCodigoEmprestimo);
         adicionarCampo(formulario, "ID do usuário:", campoIdEmprestimo);
-        formulario.add(criarBotao("Fazer empréstimo", event -> fazerEmprestimo()));
-        formulario.add(criarBotao("Fazer devolução", event -> fazerDevolucao()));
+        botaoEmprestar = criarBotao("Fazer empréstimo", KeyEvent.VK_E, event -> fazerEmprestimo());
+        formulario.add(botaoEmprestar);
+        formulario.add(criarBotao("Fazer devolução", KeyEvent.VK_D, event -> fazerDevolucao()));
         return montarPainel(formulario, listaEmprestimos);
     }
 
-    private JButton criarBotao(String texto, java.awt.event.ActionListener acao) {
+        private JButton criarBotao(String texto, int mnemonico, java.awt.event.ActionListener acao) {
         JButton botao = new BotaoArredondado(texto);
+        botao.setMnemonic(mnemonico);
         botao.addActionListener(acao);
         botao.setPreferredSize(new Dimension(140, 36));
+        botoesAcao.add(botao);
         return botao;
     }
 
     private void adicionarCampo(JPanel formulario, String rotulo, JTextField campo) {
-        formulario.add(new JLabel(rotulo));
+        JLabel legenda = new JLabel(rotulo);
+        legenda.setLabelFor(campo);
+        formulario.add(legenda);
         formulario.add(campo);
+        campo.addFocusListener(new java.awt.event.FocusAdapter() {
+            @Override
+            public void focusGained(java.awt.event.FocusEvent evento) {
+                campo.repaint();
+            }
+
+            @Override
+            public void focusLost(java.awt.event.FocusEvent evento) {
+                campo.repaint();
+            }
+        });
     }
 
     private JPanel montarPainel(JPanel formulario, JComponent lista) {
@@ -387,59 +452,167 @@ public class MainGUI extends JFrame {
         return painel;
     }
 
-    private void cadastrarLivro() {
-        executarOperacao(() -> biblioteca.adicionarItem(new Livro(campoCodigo.getText().trim(),
-                campoTitulo.getText().trim(), campoAutor.getText().trim(), campoIsbn.getText().trim())),
-                "Livro salvo.", this::limparCamposItem);
+        private void cadastrarLivro() {
+        executar(() -> {
+            Livro livro = new Livro(campoCodigo.getText().trim(), campoTitulo.getText().trim(),
+                    campoAutor.getText().trim(), campoIsbn.getText().trim());
+            return () -> {
+                biblioteca.adicionarItem(livro);
+                return "Livro salvo.";
+            };
+        }, this::limparCamposItem);
     }
 
     private void cadastrarRevista() {
-        executarOperacao(() -> biblioteca.adicionarItem(new Revista(campoCodigo.getText().trim(),
-                campoTitulo.getText().trim(), lerInteiro(campoEdicao.getText(), "Edição"))),
-                "Revista salva.", this::limparCamposItem);
+        executar(() -> {
+            Revista revista = new Revista(campoCodigo.getText().trim(), campoTitulo.getText().trim(),
+                    lerInteiro(campoEdicao.getText(), "Edição"));
+            return () -> {
+                biblioteca.adicionarItem(revista);
+                return "Revista salva.";
+            };
+        }, this::limparCamposItem);
     }
 
     private void cadastrarUsuario() {
-        executarOperacao(() -> biblioteca.adicionarUsuario(new Usuario(lerInteiro(campoIdUsuario.getText(), "ID"),
-                campoNome.getText().trim(), campoEmail.getText().trim())),
-                "Usuário salvo.", this::limparCamposUsuario);
+        executar(() -> {
+            Usuario usuario = new Usuario(lerInteiro(campoIdUsuario.getText(), "ID"),
+                    campoNome.getText().trim(), campoEmail.getText().trim());
+            return () -> {
+                biblioteca.adicionarUsuario(usuario);
+                return "Usuário salvo.";
+            };
+        }, this::limparCamposUsuario);
     }
 
     private void fazerEmprestimo() {
-        try {
-            Emprestimo emprestimo = biblioteca.emprestar(campoCodigoEmprestimo.getText().trim(),
-                    lerInteiro(campoIdEmprestimo.getText(), "ID do usuário"));
-            mostrarMensagem("Empréstimo feito em " + emprestimo.getDataEmprestimoFormatada()
-                    + ".\nDevolver até " + emprestimo.getDataLimiteFormatada() + ".");
-            limparCamposEmprestimo();
-            atualizarListas();
-        } catch (ItemIndisponivelException erro) {
-            mostrarErro(erro.getMessage());
-        } catch (IllegalArgumentException erro) {
-            mostrarErro(erro.getMessage());
-        }
+        executar(() -> {
+            String codigo = campoCodigoEmprestimo.getText().trim();
+            int idUsuario = lerInteiro(campoIdEmprestimo.getText(), "ID do usuário");
+            return () -> {
+                Emprestimo emprestimo = biblioteca.emprestar(codigo, idUsuario);
+                return "Empréstimo feito em " + emprestimo.getDataEmprestimoFormatada()
+                        + ".\nDevolver até " + emprestimo.getDataLimiteFormatada() + ".";
+            };
+        }, this::limparCamposEmprestimo);
     }
 
     private void fazerDevolucao() {
-        executarOperacao(() -> biblioteca.devolver(campoCodigoEmprestimo.getText().trim()),
-                "Devolução feita.", this::limparCamposEmprestimo);
+        executar(() -> {
+            String codigo = campoCodigoEmprestimo.getText().trim();
+            return () -> {
+                biblioteca.devolver(codigo);
+                return "Devolução feita.";
+            };
+        }, this::limparCamposEmprestimo);
     }
 
-    private void executarOperacao(Runnable operacao, String sucesso, Runnable limpeza) {
+    /**
+     * Executa uma operação de negócio fora da thread de eventos, para a janela não travar.
+     * A leitura e a validação dos campos acontecem antes, na thread de eventos, dentro de
+     * {@code preparar}; só o trabalho devolvido por ele roda em segundo plano.
+     *
+     * @param preparar lê os campos e devolve a operação, que produz a mensagem de sucesso
+     * @param limpeza  executado na thread de eventos quando a operação termina com sucesso
+     */
+    private void executar(Supplier<Callable<String>> preparar, Runnable limpeza) {
+        Callable<String> operacao;
         try {
-            operacao.run();
-            mostrarMensagem(sucesso);
-            limpeza.run();
-            atualizarListas();
+            operacao = preparar.get();
         } catch (IllegalArgumentException erro) {
             mostrarErro(erro.getMessage());
+            return;
+        }
+
+        definirOcupado(true);
+        new SwingWorker<String, Void>() {
+            @Override
+            protected String doInBackground() throws Exception {
+                return operacao.call();
+            }
+
+            @Override
+            protected void done() {
+                definirOcupado(false);
+                try {
+                    String sucesso = get();
+                    limpeza.run();
+                    mostrarMensagem(sucesso);
+                    atualizarListas();
+                } catch (ExecutionException erro) {
+                    tratarFalha(erro.getCause());
+                } catch (InterruptedException erro) {
+                    Thread.currentThread().interrupt();
+                }
+            }
+        }.execute();
+    }
+
+    /**
+     * Mostra ao usuário uma mensagem compreensível e preserva a causa técnica no log.
+     *
+     * @param causa exceção lançada pela operação em segundo plano
+     */
+    private void tratarFalha(Throwable causa) {
+        if (causa instanceof IllegalStateException) {
+            LOGGER.log(Level.SEVERE, "Falha ao acessar o banco de dados", causa);
+            mostrarErro("Não foi possível acessar o banco de dados. Tente novamente.");
+        } else if (causa instanceof RuntimeException) {
+            mostrarErro(causa.getMessage());
+        } else {
+            LOGGER.log(Level.SEVERE, "Falha inesperada", causa);
+            mostrarErro("Ocorreu um erro inesperado.");
         }
     }
 
-    private void atualizarListas() {
-        modeloItens.setRowCount(0);
+    /**
+     * Mostra o cursor de espera e desabilita os botões de ação enquanto há trabalho em andamento,
+     * evitando cliques repetidos e operações simultâneas no banco.
+     *
+     * @param ocupado {@code true} ao iniciar uma operação, {@code false} ao terminar
+     */
+    private void definirOcupado(boolean ocupado) {
+        operacoesEmAndamento += ocupado ? 1 : -1;
+        boolean livre = operacoesEmAndamento == 0;
+        Component foco = KeyboardFocusManager.getCurrentKeyboardFocusManager().getFocusOwner();
+        setCursor(Cursor.getPredefinedCursor(livre ? Cursor.DEFAULT_CURSOR : Cursor.WAIT_CURSOR));
+        botoesAcao.forEach(botao -> botao.setEnabled(livre));
+        if (livre && foco != null) {
+            foco.requestFocusInWindow();
+        }
+    }
 
-        for (ItemBiblioteca item : biblioteca.listarItens()) {
+    /** Dados lidos do banco para preencher as três abas de uma só vez. */
+    private record DadosTela(List<ItemBiblioteca> itens, List<Usuario> usuarios,
+                             List<Emprestimo> emprestimos) {
+    }
+
+    private void atualizarListas() {
+        definirOcupado(true);
+        new SwingWorker<DadosTela, Void>() {
+            @Override
+            protected DadosTela doInBackground() {
+                return new DadosTela(biblioteca.listarItens(), biblioteca.listarUsuarios(),
+                        biblioteca.listarEmprestimos());
+            }
+
+            @Override
+            protected void done() {
+                definirOcupado(false);
+                try {
+                    exibir(get());
+                } catch (ExecutionException erro) {
+                    tratarFalha(erro.getCause());
+                } catch (InterruptedException erro) {
+                    Thread.currentThread().interrupt();
+                }
+            }
+        }.execute();
+    }
+
+    private void exibir(DadosTela dados) {
+        modeloItens.setRowCount(0);
+        for (ItemBiblioteca item : dados.itens()) {
             modeloItens.addRow(new Object[]{
                     item.getCodigo(),
                     item.getTitulo(),
@@ -447,8 +620,8 @@ public class MainGUI extends JFrame {
                     item.isDisponivel() ? "Disponível" : "Emprestado"
             });
         }
-        listaUsuarios.setText(formatarLista(biblioteca.listarUsuarios(), "Nenhum usuário cadastrado."));
-        listaEmprestimos.setText(formatarLista(biblioteca.listarEmprestimos(), "Nenhum empréstimo realizado."));
+        listaUsuarios.setText(formatarLista(dados.usuarios(), "Nenhum usuário cadastrado."));
+        listaEmprestimos.setText(formatarLista(dados.emprestimos(), "Nenhum empréstimo realizado."));
     }
 
     private String formatarLista(Iterable<?> objetos, String mensagemVazia) {
