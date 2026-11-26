@@ -51,6 +51,12 @@ public class Revista extends ItemBiblioteca {
         this.numeroEdicao = numeroEdicao;
     }
 
+    /**
+     * Garante que o número da edição seja maior que zero.
+     *
+     * @param numeroEdicao número da edição informado
+     * @throws IllegalArgumentException se o número da edição for menor ou igual a zero
+     */
     private static void validarNumeroEdicao(int numeroEdicao) {
         if (numeroEdicao <= 0) {
             throw new IllegalArgumentException("O número da edição deve ser maior que zero.");

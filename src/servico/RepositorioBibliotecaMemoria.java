@@ -95,21 +95,36 @@ public class RepositorioBibliotecaMemoria implements RepositorioBiblioteca {
     public void atualizarEmprestimo(Emprestimo emprestimo) {
         // Não precisa atualizar a lista: o objeto já foi modificado.
     }
-        @Override
+
+    /**
+     * Na implementação em memória, o objeto já está armazenado na lista.
+     * Portanto, suas alterações já ficam refletidas no repositório.
+     *
+     * @param item item com os dados novos
+     */
+    @Override
     public void atualizarItem(ItemBiblioteca item) {
         // Não precisa atualizar a lista: o objeto já foi modificado.
     }
 
+    /** {@inheritDoc} */
     @Override
     public void excluirItem(String codigo) {
         itens.removeIf(item -> item.getCodigo().equals(codigo));
     }
 
+    /**
+     * Na implementação em memória, o objeto já está armazenado na lista.
+     * Portanto, suas alterações já ficam refletidas no repositório.
+     *
+     * @param usuario usuário com os dados novos
+     */
     @Override
     public void atualizarUsuario(Usuario usuario) {
         // Não precisa atualizar a lista: o objeto já foi modificado.
     }
 
+    /** {@inheritDoc} */
     @Override
     public void excluirUsuario(int id) {
         usuarios.removeIf(usuario -> usuario.getId() == id);

@@ -25,6 +25,13 @@ public class RepositorioBibliotecaSQLite implements RepositorioBiblioteca {
         // A conexão é aberta por operação para manter os recursos fechados.
     }
 
+    /**
+     * Grava um livro ou uma revista na tabela de itens do SQLite.
+     *
+     * @param item item a armazenar
+     * @throws IllegalArgumentException se o tipo do item não for livro nem revista
+     * @throws IllegalStateException se a gravação no banco falhar
+     */
     @Override
     public void salvarItem(ItemBiblioteca item) {
         String sql = """
@@ -60,6 +67,12 @@ public class RepositorioBibliotecaSQLite implements RepositorioBiblioteca {
         }
     }
 
+    /**
+     * Lista os itens do acervo, ordenados pelo código.
+     *
+     * @return os itens cadastrados ou uma lista vazia se não houver itens
+     * @throws IllegalStateException se a consulta ao banco falhar
+     */
     @Override
     public List<ItemBiblioteca> listarItens() {
         List<ItemBiblioteca> itens = new ArrayList<>();
@@ -81,6 +94,13 @@ public class RepositorioBibliotecaSQLite implements RepositorioBiblioteca {
         return itens;
     }
 
+    /**
+     * Busca um item do acervo pelo código.
+     *
+     * @param codigo código do item procurado
+     * @return o item encontrado ou {@code null} se o código não estiver cadastrado
+     * @throws IllegalStateException se a consulta ao banco falhar
+     */
     @Override
     public ItemBiblioteca buscarItem(String codigo) {
         String sql = "SELECT * FROM itens WHERE codigo = ?";
@@ -103,6 +123,14 @@ public class RepositorioBibliotecaSQLite implements RepositorioBiblioteca {
         return null;
     }
 
+    /**
+     * Monta um livro ou uma revista a partir de uma linha da tabela de itens.
+     *
+     * @param resultado linha lida do banco
+     * @return o item correspondente, já marcado como emprestado quando estiver indisponível
+     * @throws SQLException se a leitura das colunas falhar
+     * @throws IllegalStateException se o tipo gravado não for livro nem revista
+     */
     private ItemBiblioteca converterItem(ResultSet resultado) throws SQLException {
         String codigo = resultado.getString("codigo");
         String titulo = resultado.getString("titulo");
@@ -134,6 +162,12 @@ public class RepositorioBibliotecaSQLite implements RepositorioBiblioteca {
         return item;
     }
 
+    /**
+     * Lista os usuários cadastrados, ordenados pelo identificador.
+     *
+     * @return os usuários cadastrados ou uma lista vazia se não houver usuários
+     * @throws IllegalStateException se a consulta ao banco falhar
+     */
     @Override
     public List<Usuario> listarUsuarios() {
         List<Usuario> usuarios = new ArrayList<>();
@@ -159,6 +193,12 @@ public class RepositorioBibliotecaSQLite implements RepositorioBiblioteca {
         return usuarios;
     }
 
+    /**
+     * Lista o histórico de empréstimos, incluindo os devolvidos e os expirados.
+     *
+     * @return os empréstimos registrados ou uma lista vazia se não houver registros
+     * @throws IllegalStateException se a consulta ao banco falhar
+     */
     @Override
     public List<Emprestimo> listarEmprestimos() {
         List<Emprestimo> emprestimos = new ArrayList<>();
@@ -218,6 +258,12 @@ public class RepositorioBibliotecaSQLite implements RepositorioBiblioteca {
         return emprestimos;
     }
 
+    /**
+     * Grava um novo usuário na tabela de usuários.
+     *
+     * @param usuario usuário a armazenar
+     * @throws IllegalStateException se a gravação no banco falhar
+     */
     @Override
     public void salvarUsuario(Usuario usuario) {
         String sql = "INSERT INTO usuarios (id, nome, email) VALUES (?, ?, ?)";
@@ -236,6 +282,13 @@ public class RepositorioBibliotecaSQLite implements RepositorioBiblioteca {
         }
     }
 
+    /**
+     * Busca um usuário pelo identificador.
+     *
+     * @param id identificador do usuário procurado
+     * @return o usuário encontrado ou {@code null} se o ID não estiver cadastrado
+     * @throws IllegalStateException se a consulta ao banco falhar
+     */
     @Override
     public Usuario buscarUsuario(int id) {
         String sql = "SELECT id, nome, email FROM usuarios WHERE id = ?";
@@ -262,6 +315,12 @@ public class RepositorioBibliotecaSQLite implements RepositorioBiblioteca {
         return null;
     }
 
+    /**
+     * Grava um empréstimo e marca o item como indisponível na mesma transação.
+     *
+     * @param emprestimo empréstimo a armazenar
+     * @throws IllegalStateException se o item já estiver indisponível ou se a gravação falhar
+     */
     @Override
     public void salvarEmprestimo(Emprestimo emprestimo) {
         String sqlEmprestimo = """
@@ -311,10 +370,12 @@ public class RepositorioBibliotecaSQLite implements RepositorioBiblioteca {
     }
 
     /**
-     * Atualiza o status de um empréstimo no SQLite e libera
-     * o item quando ele for devolvido ou expirar.
+     * Atualiza o status e a data de devolução de um empréstimo ativo
+     * e marca o item como disponível, na mesma transação.
      *
      * @param emprestimo empréstimo com o status atualizado
+     * @throws IllegalStateException se o empréstimo ativo ou o item não existir no banco,
+     *         ou se a atualização falhar
      */
     @Override
     public void atualizarEmprestimo(Emprestimo emprestimo) {
@@ -395,7 +456,16 @@ public class RepositorioBibliotecaSQLite implements RepositorioBiblioteca {
             );
         }
     }
-        @Override
+
+    /**
+     * Grava título, autor, ISBN ou edição de um item já armazenado.
+     * A disponibilidade do item não é alterada por este método.
+     *
+     * @param item item com os dados novos, identificado pelo código
+     * @throws IllegalArgumentException se o tipo do item não for livro nem revista
+     * @throws IllegalStateException se o item não existir no banco ou se a atualização falhar
+     */
+    @Override
     public void atualizarItem(ItemBiblioteca item) {
         String sql = """
                 UPDATE itens
@@ -431,6 +501,12 @@ public class RepositorioBibliotecaSQLite implements RepositorioBiblioteca {
         }
     }
 
+    /**
+     * Remove um item do acervo.
+     *
+     * @param codigo código do item a remover
+     * @throws IllegalStateException se o item não existir no banco ou se a exclusão falhar
+     */
     @Override
     public void excluirItem(String codigo) {
         String sql = "DELETE FROM itens WHERE codigo = ?";
@@ -449,6 +525,12 @@ public class RepositorioBibliotecaSQLite implements RepositorioBiblioteca {
         }
     }
 
+    /**
+     * Grava o nome e o e-mail de um usuário já armazenado.
+     *
+     * @param usuario usuário com os dados novos, identificado pelo ID
+     * @throws IllegalStateException se o usuário não existir no banco ou se a atualização falhar
+     */
     @Override
     public void atualizarUsuario(Usuario usuario) {
         String sql = "UPDATE usuarios SET nome = ?, email = ? WHERE id = ?";
@@ -469,6 +551,12 @@ public class RepositorioBibliotecaSQLite implements RepositorioBiblioteca {
         }
     }
 
+    /**
+     * Remove um usuário da biblioteca.
+     *
+     * @param id identificador do usuário a remover
+     * @throws IllegalStateException se o usuário não existir no banco ou se a exclusão falhar
+     */
     @Override
     public void excluirUsuario(int id) {
         String sql = "DELETE FROM usuarios WHERE id = ?";

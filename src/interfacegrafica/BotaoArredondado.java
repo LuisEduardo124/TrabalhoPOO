@@ -66,6 +66,11 @@ public class BotaoArredondado extends JButton {
         repaint();
     }
 
+    /**
+     * Desenha o fundo arredondado, o contorno, o anel de foco e o texto do botão.
+     *
+     * @param g contexto gráfico usado no desenho
+     */
     @Override
     protected void paintComponent(Graphics g) {
         Graphics2D g2 = (Graphics2D) g.create();
@@ -115,10 +120,24 @@ public class BotaoArredondado extends JButton {
         g2.dispose();
     }
 
+    /**
+     * Calcula o quanto uma cor é clara, para escolher o realce de passagem do mouse.
+     *
+     * @param cor cor de fundo do botão
+     * @return valor entre 0 (preto) e 1 (branco)
+     */
     private static double luminancia(Color cor) {
         return (0.299 * cor.getRed() + 0.587 * cor.getGreen() + 0.114 * cor.getBlue()) / 255.0;
     }
 
+    /**
+     * Mistura duas cores na proporção informada.
+     *
+     * @param origem cor de partida
+     * @param alvo cor de destino
+     * @param proporcao fração do destino, de 0 a 1
+     * @return a cor intermediária
+     */
     private static Color misturar(Color origem, Color alvo, float proporcao) {
         return new Color(
                 Math.round(origem.getRed() + (alvo.getRed() - origem.getRed()) * proporcao),

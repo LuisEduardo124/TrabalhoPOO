@@ -25,6 +25,7 @@ public final class InicializadorBancoSQLite {
     private static final List<String> TABELAS_ESPERADAS =
             List.of("itens", "usuarios", "emprestimos");
 
+    /** Impede a instanciação desta classe utilitária. */
     private InicializadorBancoSQLite() {
         // Classe utilitária.
     }
@@ -45,6 +46,12 @@ public final class InicializadorBancoSQLite {
         }
     }
 
+    /**
+     * Lê o script de criação das tabelas do arquivo do projeto ou do recurso empacotado.
+     *
+     * @return o conteúdo de {@code sql/schema.sql}
+     * @throws IOException se o script não puder ser lido ou não for encontrado
+     */
     private static String lerSchema() throws IOException {
         if (Files.isRegularFile(CAMINHO_SCHEMA)) {
             return Files.readString(CAMINHO_SCHEMA, StandardCharsets.UTF_8);
@@ -59,6 +66,13 @@ public final class InicializadorBancoSQLite {
         }
     }
 
+    /**
+     * Executa cada instrução do script, ignorando comentários de linha.
+     *
+     * @param conexao conexão com o banco SQLite
+     * @param schema conteúdo do script SQL
+     * @throws SQLException se alguma instrução falhar
+     */
     private static void executarSchema(Connection conexao, String schema) throws SQLException {
         try (Statement comando = conexao.createStatement()) {
             String schemaSemComentarios = schema.lines()
@@ -73,6 +87,12 @@ public final class InicializadorBancoSQLite {
         }
     }
 
+    /**
+     * Confere se as tabelas obrigatórias foram criadas.
+     *
+     * @param conexao conexão com o banco SQLite
+     * @throws SQLException se alguma tabela esperada não existir
+     */
     private static void verificarTabelas(Connection conexao) throws SQLException {
         String sql = "SELECT name FROM sqlite_master WHERE type = 'table' AND name = ?";
         try (var comando = conexao.prepareStatement(sql)) {

@@ -30,7 +30,12 @@ public class RepositorioBibliotecaPostgres implements RepositorioBiblioteca {
     }
 
     /**
-     * Salva um livro ou revista no PostgreSQL.
+     * Grava um livro ou uma revista na tabela de itens do PostgreSQL.
+     *
+     * @param item item a armazenar
+     * @throws IllegalArgumentException se o tipo do item não for livro nem revista
+     * @throws IllegalStateException se a senha do banco não estiver configurada
+     *         ou se a gravação falhar
      */
     @Override
     public void salvarItem(ItemBiblioteca item) {
@@ -74,7 +79,11 @@ public class RepositorioBibliotecaPostgres implements RepositorioBiblioteca {
     }
 
     /**
-     * Lista todos os itens cadastrados.
+     * Lista os itens do acervo, ordenados pelo código.
+     *
+     * @return os itens cadastrados ou uma lista vazia se não houver itens
+     * @throws IllegalStateException se a senha do banco não estiver configurada
+     *         ou se a consulta falhar
      */
     @Override
     public List<ItemBiblioteca> listarItens() {
@@ -100,7 +109,12 @@ public class RepositorioBibliotecaPostgres implements RepositorioBiblioteca {
     }
 
     /**
-     * Busca um item pelo código.
+     * Busca um item do acervo pelo código.
+     *
+     * @param codigo código do item procurado
+     * @return o item encontrado ou {@code null} se o código não estiver cadastrado
+     * @throws IllegalStateException se a senha do banco não estiver configurada
+     *         ou se a consulta falhar
      */
     @Override
     public ItemBiblioteca buscarItem(String codigo) {
@@ -127,7 +141,12 @@ public class RepositorioBibliotecaPostgres implements RepositorioBiblioteca {
     }
 
     /**
-     * Converte o resultado do banco para Livro ou Revista.
+     * Monta um livro ou uma revista a partir de uma linha da tabela de itens.
+     *
+     * @param resultado linha lida do banco
+     * @return o item correspondente, já marcado como emprestado quando estiver indisponível
+     * @throws SQLException se a leitura das colunas falhar
+     * @throws IllegalStateException se o tipo gravado não for livro nem revista
      */
     private ItemBiblioteca converterItem(ResultSet resultado)
             throws SQLException {
@@ -167,7 +186,11 @@ public class RepositorioBibliotecaPostgres implements RepositorioBiblioteca {
     }
 
     /**
-     * Salva um novo usuário.
+     * Grava um novo usuário na tabela de usuários.
+     *
+     * @param usuario usuário a armazenar
+     * @throws IllegalStateException se a senha do banco não estiver configurada
+     *         ou se a gravação falhar
      */
     @Override
     public void salvarUsuario(Usuario usuario) {
@@ -193,7 +216,11 @@ public class RepositorioBibliotecaPostgres implements RepositorioBiblioteca {
     }
 
     /**
-     * Lista os usuários cadastrados.
+     * Lista os usuários cadastrados, ordenados pelo identificador.
+     *
+     * @return os usuários cadastrados ou uma lista vazia se não houver usuários
+     * @throws IllegalStateException se a senha do banco não estiver configurada
+     *         ou se a consulta falhar
      */
     @Override
     public List<Usuario> listarUsuarios() {
@@ -227,7 +254,12 @@ public class RepositorioBibliotecaPostgres implements RepositorioBiblioteca {
     }
 
     /**
-     * Busca um usuário pelo ID.
+     * Busca um usuário pelo identificador.
+     *
+     * @param id identificador do usuário procurado
+     * @return o usuário encontrado ou {@code null} se o ID não estiver cadastrado
+     * @throws IllegalStateException se a senha do banco não estiver configurada
+     *         ou se a consulta falhar
      */
     @Override
     public Usuario buscarUsuario(int id) {
@@ -262,7 +294,11 @@ public class RepositorioBibliotecaPostgres implements RepositorioBiblioteca {
     }
 
     /**
-     * Lista o histórico de empréstimos.
+     * Lista o histórico de empréstimos, incluindo os devolvidos e os expirados.
+     *
+     * @return os empréstimos registrados ou uma lista vazia se não houver registros
+     * @throws IllegalStateException se a senha do banco não estiver configurada
+     *         ou se a consulta falhar
      */
     @Override
     public List<Emprestimo> listarEmprestimos() {
@@ -325,8 +361,11 @@ public class RepositorioBibliotecaPostgres implements RepositorioBiblioteca {
     }
 
     /**
-     * Salva um empréstimo e atualiza a disponibilidade do item.
-     * As duas operações são executadas na mesma transação.
+     * Grava um empréstimo e marca o item como indisponível na mesma transação.
+     *
+     * @param emprestimo empréstimo a armazenar
+     * @throws IllegalStateException se o item já estiver indisponível, se a senha
+     *         do banco não estiver configurada ou se a gravação falhar
      */
     @Override
     public void salvarEmprestimo(Emprestimo emprestimo) {
@@ -395,8 +434,12 @@ public class RepositorioBibliotecaPostgres implements RepositorioBiblioteca {
     }
 
     /**
-     * Atualiza o status de um empréstimo e libera o item.
-     * A atualização é feita em uma transação.
+     * Atualiza o status e a data de devolução de um empréstimo ativo
+     * e marca o item como disponível, na mesma transação.
+     *
+     * @param emprestimo empréstimo com o status atualizado
+     * @throws IllegalStateException se o empréstimo ativo ou o item não existir no banco,
+     *         se a senha do banco não estiver configurada ou se a atualização falhar
      */
     @Override
     public void atualizarEmprestimo(Emprestimo emprestimo) {
@@ -479,7 +522,13 @@ public class RepositorioBibliotecaPostgres implements RepositorioBiblioteca {
     }
 
     /**
-     * Atualiza os dados de um livro ou revista existente.
+     * Grava título, autor, ISBN ou edição de um item já armazenado.
+     * A disponibilidade do item não é alterada por este método.
+     *
+     * @param item item com os dados novos, identificado pelo código
+     * @throws IllegalArgumentException se o tipo do item não for livro nem revista
+     * @throws IllegalStateException se o item não existir no banco, se a senha
+     *         do banco não estiver configurada ou se a atualização falhar
      */
     @Override
     public void atualizarItem(ItemBiblioteca item) {
@@ -526,7 +575,11 @@ public class RepositorioBibliotecaPostgres implements RepositorioBiblioteca {
     }
 
     /**
-     * Exclui um item do acervo.
+     * Remove um item do acervo.
+     *
+     * @param codigo código do item a remover
+     * @throws IllegalStateException se o item não existir no banco, se a senha
+     *         do banco não estiver configurada ou se a exclusão falhar
      */
     @Override
     public void excluirItem(String codigo) {
@@ -551,7 +604,11 @@ public class RepositorioBibliotecaPostgres implements RepositorioBiblioteca {
     }
 
     /**
-     * Atualiza nome e e-mail de um usuário.
+     * Grava o nome e o e-mail de um usuário já armazenado.
+     *
+     * @param usuario usuário com os dados novos, identificado pelo ID
+     * @throws IllegalStateException se o usuário não existir no banco, se a senha
+     *         do banco não estiver configurada ou se a atualização falhar
      */
     @Override
     public void atualizarUsuario(Usuario usuario) {
@@ -582,7 +639,11 @@ public class RepositorioBibliotecaPostgres implements RepositorioBiblioteca {
     }
 
     /**
-     * Exclui um usuário cadastrado.
+     * Remove um usuário da biblioteca.
+     *
+     * @param id identificador do usuário a remover
+     * @throws IllegalStateException se o usuário não existir no banco, se a senha
+     *         do banco não estiver configurada ou se a exclusão falhar
      */
     @Override
     public void excluirUsuario(int id) {

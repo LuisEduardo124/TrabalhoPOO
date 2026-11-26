@@ -165,6 +165,7 @@ public class Emprestimo {
     /**
      * Verifica o vencimento e, se o empréstimo continuar ativo,
      * registra a data da devolução, marca-o como devolvido e libera o item.
+     * Empréstimos já devolvidos ou já expirados permanecem como estão.
      */
     public void devolver() {
         atualizarStatus();

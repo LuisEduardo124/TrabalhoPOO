@@ -50,6 +50,7 @@ public abstract class ItemBiblioteca {
      * Altera o título do item.
      *
      * @param titulo novo título do item
+     * @throws IllegalArgumentException se o título for nulo ou estiver em branco
      */
     public void setTitulo(String titulo) {
         validarTitulo(titulo);
@@ -84,12 +85,25 @@ public abstract class ItemBiblioteca {
         disponivel = true;
     }
 
+    /**
+     * Garante que o código contenha apenas dígitos.
+     *
+     * @param codigo código informado para o item
+     * @throws IllegalArgumentException se o código for nulo ou contiver
+     *         caracteres que não sejam dígitos
+     */
     private static void validarCodigo(String codigo) {
         if (codigo == null || !codigo.matches("\\d+")) {
             throw new IllegalArgumentException("O código deve ter apenas números.");
         }
     }
 
+    /**
+     * Garante que o título não esteja ausente nem vazio.
+     *
+     * @param titulo título informado para o item
+     * @throws IllegalArgumentException se o título for nulo ou estiver em branco
+     */
     private static void validarTitulo(String titulo) {
         if (titulo == null || titulo.trim().isEmpty()) {
             throw new IllegalArgumentException("O título não pode ser vazio.");

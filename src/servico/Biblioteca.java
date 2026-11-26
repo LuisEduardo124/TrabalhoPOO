@@ -111,7 +111,7 @@ public class Biblioteca {
         emprestimo.devolver();
         repositorio.atualizarEmprestimo(emprestimo);
     }
-        /**
+    /**
      * Altera os dados de um livro já cadastrado. O código não muda.
      *
      * @param codigo código do livro a alterar
@@ -211,6 +211,13 @@ public class Biblioteca {
         repositorio.excluirUsuario(id);
     }
 
+    /**
+     * Exige um item ainda não cadastrado antes de incluí-lo no acervo.
+     *
+     * @param item item que será cadastrado
+     * @throws IllegalArgumentException se o item for nulo ou se já existir
+     *         outro item com o mesmo código
+     */
     private void exigirItemNovo(ItemBiblioteca item) {
         if (item == null) {
             throw new IllegalArgumentException("Item inválido.");
@@ -220,6 +227,13 @@ public class Biblioteca {
         }
     }
 
+    /**
+     * Busca um item e interrompe a operação quando ele não existe.
+     *
+     * @param codigo código do item procurado
+     * @return o item encontrado
+     * @throws IllegalArgumentException se nenhum item tiver esse código
+     */
     private ItemBiblioteca exigirItem(String codigo) {
         ItemBiblioteca item = repositorio.buscarItem(codigo);
         if (item == null) {
@@ -228,6 +242,13 @@ public class Biblioteca {
         return item;
     }
 
+    /**
+     * Busca um usuário e interrompe a operação quando ele não existe.
+     *
+     * @param id identificador do usuário procurado
+     * @return o usuário encontrado
+     * @throws IllegalArgumentException se nenhum usuário tiver esse ID
+     */
     private Usuario exigirUsuario(int id) {
         Usuario usuario = repositorio.buscarUsuario(id);
         if (usuario == null) {
@@ -236,6 +257,9 @@ public class Biblioteca {
         return usuario;
     }
 
+    /**
+     * Recalcula o status dos empréstimos e grava os que mudaram de situação.
+     */
     private void atualizarEmprestimos() {
         for (Emprestimo emprestimo : repositorio.listarEmprestimos()) {
             modelo.StatusEmprestimo statusAnterior = emprestimo.getStatusAtual();

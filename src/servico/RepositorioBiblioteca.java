@@ -78,7 +78,7 @@ public interface RepositorioBiblioteca {
      */
     void atualizarEmprestimo(Emprestimo emprestimo);
 
-        /**
+    /**
      * Grava os dados alterados de um item já armazenado (título, autor, ISBN ou edição).
      * A disponibilidade do item não é alterada por este método.
      *

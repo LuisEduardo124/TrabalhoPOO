@@ -80,12 +80,25 @@ public class Usuario {
         this.email = email;
     }
 
+    /**
+     * Garante que o nome não esteja ausente nem vazio.
+     *
+     * @param nome nome informado
+     * @throws IllegalArgumentException se o nome for nulo ou estiver em branco
+     */
     private static void validarNome(String nome) {
         if (nome == null || nome.trim().isEmpty()) {
             throw new IllegalArgumentException("O nome não pode ser vazio.");
         }
     }
 
+    /**
+     * Garante que o e-mail contenha {@code @gmail.com}.
+     *
+     * @param email endereço de e-mail informado
+     * @throws IllegalArgumentException se o e-mail for nulo
+     *         ou não contiver {@code @gmail.com}
+     */
     private static void validarEmail(String email) {
         if (email == null || !email.contains("@gmail.com")) {
             throw new IllegalArgumentException("O e-mail deve conter \"@gmail.com\".");

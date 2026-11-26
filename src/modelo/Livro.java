@@ -78,12 +78,26 @@ public class Livro extends ItemBiblioteca {
         this.isbn = isbn;
     }
 
+    /**
+     * Garante que o nome do autor tenha apenas letras e espaços.
+     *
+     * @param autor nome do autor
+     * @throws IllegalArgumentException se o nome for nulo, estiver vazio
+     *         ou contiver caracteres além de letras e espaços
+     */
     private static void validarAutor(String autor) {
         if (autor == null || !autor.matches("[a-zA-ZÀ-ÿ\\s]+") || autor.trim().isEmpty()) {
             throw new IllegalArgumentException("O autor deve ter apenas letras.");
         }
     }
 
+    /**
+     * Garante que o ISBN tenha exatamente 13 dígitos.
+     *
+     * @param isbn ISBN informado
+     * @throws IllegalArgumentException se o ISBN for nulo ou não tiver
+     *         exatamente 13 dígitos
+     */
     private static void validarIsbn(String isbn) {
         if (isbn == null || !isbn.matches("\\d{13}")) {
             throw new IllegalArgumentException("O ISBN deve ter 13 números.");

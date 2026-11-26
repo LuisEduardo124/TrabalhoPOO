@@ -189,6 +189,7 @@ public class MainGUI extends JFrame {
 
         // Ao abrir, o foco vai para o primeiro campo do formulário, e não para o botão de tema.
         addWindowListener(new WindowAdapter() {
+            /** Coloca o foco no seletor de tipo quando a janela abre. */
             @Override
             public void windowOpened(WindowEvent evento) {
                 seletorTipo.requestFocusInWindow();
@@ -223,7 +224,11 @@ public class MainGUI extends JFrame {
         UIManager.put("Button.font", FONTE_TEXTO);
     }
 
-    /** Faixa superior com o nome do sistema à esquerda e o botão de tema à direita. */
+    /**
+     * Monta a faixa superior, com o nome do sistema à esquerda e o botão de tema à direita.
+     *
+     * @return o painel do cabeçalho
+     */
     private JPanel criarCabecalho() {
         JLabel titulo = new JLabel("Biblioteca");
         titulo.setFont(new Font(FONTE, Font.BOLD, 20));
@@ -255,7 +260,12 @@ public class MainGUI extends JFrame {
         return cabecalho;
     }
 
-    /** Barra inferior com as mensagens de sucesso/erro à esquerda e os atalhos de teclado à direita. */
+    /**
+     * Monta a barra inferior, com as mensagens de sucesso ou erro à esquerda
+     * e os atalhos de teclado à direita.
+     *
+     * @return o painel da barra de status
+     */
     private JPanel criarBarraStatus() {
         temporizadorStatus.setRepeats(false);
         rotuloStatus.setFont(new Font(FONTE, Font.PLAIN, 13));
@@ -402,11 +412,13 @@ public class MainGUI extends JFrame {
         rolagem.getVerticalScrollBar().setUnitIncrement(16);
         // A borda da tabela fica na cor de destaque enquanto ela tem o foco do teclado.
         tabela.addFocusListener(new FocusAdapter() {
+            /** Redesenha a borda da tabela quando ela recebe o foco. */
             @Override
             public void focusGained(FocusEvent evento) {
                 rolagem.repaint();
             }
 
+            /** Redesenha a borda da tabela quando ela perde o foco. */
             @Override
             public void focusLost(FocusEvent evento) {
                 rolagem.repaint();
@@ -442,7 +454,12 @@ public class MainGUI extends JFrame {
         return botao;
     }
 
-    /** Largura proporcional ao texto (com mínimo de 112 px) e altura padrão de 36 px. */
+    /**
+     * Define a largura proporcional ao texto, com mínimo de 112 px, e a altura de 36 px.
+     *
+     * @param botao botão que receberá o tamanho
+     * @param textoMaisLongo texto usado para calcular a largura
+     */
     private static void dimensionarBotao(JButton botao, String textoMaisLongo) {
         int larguraTexto = botao.getFontMetrics(botao.getFont()).stringWidth(textoMaisLongo);
         botao.setPreferredSize(new Dimension(Math.max(112, larguraTexto + 40), 36));
@@ -467,6 +484,13 @@ public class MainGUI extends JFrame {
      */
     private static DefaultTableModel criarModelo(String... colunas) {
         return new DefaultTableModel(colunas, 0) {
+            /**
+             * Impede a edição direta das células.
+             *
+             * @param linha índice da linha
+             * @param coluna índice da coluna
+             * @return {@code false}, pois a edição é feita pelos formulários
+             */
             @Override
             public boolean isCellEditable(int linha, int coluna) {
                 return false;
@@ -498,12 +522,14 @@ public class MainGUI extends JFrame {
 
         // Por padrão o Tab fica preso dentro da tabela; aqui ele passa o foco para o próximo componente.
         tabela.getActionMap().put("selectNextColumnCell", new AbstractAction() {
+            /** Envia o foco para o próximo componente ao pressionar Tab. */
             @Override
             public void actionPerformed(java.awt.event.ActionEvent evento) {
                 KeyboardFocusManager.getCurrentKeyboardFocusManager().focusNextComponent(tabela);
             }
         });
         tabela.getActionMap().put("selectPreviousColumnCell", new AbstractAction() {
+            /** Envia o foco para o componente anterior ao pressionar Shift+Tab. */
             @Override
             public void actionPerformed(java.awt.event.ActionEvent evento) {
                 KeyboardFocusManager.getCurrentKeyboardFocusManager().focusPreviousComponent(tabela);
@@ -565,6 +591,7 @@ public class MainGUI extends JFrame {
         getRootPane().getInputMap(JComponent.WHEN_IN_FOCUSED_WINDOW).put(
                 KeyStroke.getKeyStroke(KeyEvent.VK_T, KeyEvent.CTRL_DOWN_MASK), "alternarTema");
         getRootPane().getActionMap().put("alternarTema", new AbstractAction() {
+            /** Alterna entre o tema claro e o escuro. */
             @Override
             public void actionPerformed(java.awt.event.ActionEvent evento) {
                 alternarTema();
@@ -573,6 +600,7 @@ public class MainGUI extends JFrame {
         getRootPane().getInputMap(JComponent.WHEN_IN_FOCUSED_WINDOW).put(
                 KeyStroke.getKeyStroke(KeyEvent.VK_ESCAPE, 0), "limparFormulario");
         getRootPane().getActionMap().put("limparFormulario", new AbstractAction() {
+            /** Limpa o formulário da aba aberta, se nenhuma operação estiver em andamento. */
             @Override
             public void actionPerformed(java.awt.event.ActionEvent evento) {
                 if (operacoesEmAndamento > 0) {
@@ -1054,6 +1082,9 @@ public class MainGUI extends JFrame {
     /**
      * Pede confirmação antes de uma exclusão. O foco inicial fica em "Cancelar", para que um
      * Enter acidental não apague o registro.
+     *
+     * @param mensagem texto exibido no diálogo
+     * @return {@code true} se o usuário escolher Excluir
      */
     private boolean confirmar(String mensagem) {
         JButton excluir = new BotaoArredondado("Excluir");
@@ -1108,11 +1139,18 @@ public class MainGUI extends JFrame {
 
         definirOcupado(true);
         new SwingWorker<String, Void>() {
+            /**
+             * Executa a operação de negócio fora da thread de eventos.
+             *
+             * @return mensagem de sucesso produzida pela operação
+             * @throws Exception se a operação falhar
+             */
             @Override
             protected String doInBackground() throws Exception {
                 return operacao.call();
             }
 
+            /** Atualiza a tela quando a operação termina. */
             @Override
             protected void done() {
                 definirOcupado(false);
@@ -1189,12 +1227,18 @@ public class MainGUI extends JFrame {
     private void atualizarListas() {
         definirOcupado(true);
         new SwingWorker<DadosTela, Void>() {
+            /**
+             * Carrega itens, usuários e empréstimos fora da thread de eventos.
+             *
+             * @return dados usados para preencher as três abas
+             */
             @Override
             protected DadosTela doInBackground() {
                 return new DadosTela(biblioteca.listarItens(), biblioteca.listarUsuarios(),
                         biblioteca.listarEmprestimos());
             }
 
+            /** Preenche as tabelas quando a consulta termina. */
             @Override
             protected void done() {
                 definirOcupado(false);
@@ -1312,14 +1356,22 @@ public class MainGUI extends JFrame {
         }
     }
 
-    /** Erros e falhas de validação exigem atenção: aparecem em diálogo e ficam registrados na barra de status. */
+    /**
+     * Mostra um erro em diálogo e o registra na barra de status.
+     *
+     * @param mensagem texto do erro; quebras de linha viram espaço na barra de status
+     */
     private void mostrarErro(String mensagem) {
         mostrarStatus(mensagem.replace('\n', ' '), TipoMensagem.ERRO);
         JButton ok = new BotaoArredondado("OK");
         mostrarDialogo(mensagem, "Não foi possível concluir", JOptionPane.ERROR_MESSAGE, ok, ok);
     }
 
-    /** Sucesso não interrompe o trabalho: a mensagem aparece na barra de status e some sozinha. */
+    /**
+     * Mostra uma mensagem de sucesso na barra de status, que some sozinha.
+     *
+     * @param mensagem texto do sucesso; quebras de linha viram espaço na barra
+     */
     private void mostrarMensagem(String mensagem) {
         mostrarStatus(mensagem.replace("\n", " "), TipoMensagem.SUCESSO);
         temporizadorStatus.restart();
@@ -1402,9 +1454,19 @@ public class MainGUI extends JFrame {
      * padronização visual utilizada no sistema.</p>
      */    private void estilizarSeletor() {
         seletorTipo.setUI(new BasicComboBoxUI() {
+            /**
+             * Substitui a seta padrão do seletor por um botão desenhado no tema.
+             *
+             * @return botão da seta, sem preenchimento e sem foco
+             */
             @Override
             protected JButton createArrowButton() {
                 JButton seta = new JButton() {
+                    /**
+                     * Desenha o triângulo da seta do seletor.
+                     *
+                     * @param g contexto gráfico usado no desenho
+                     */
                     @Override
                     protected void paintComponent(Graphics g) {
                         Graphics2D g2 = (Graphics2D) g.create();
@@ -1444,6 +1506,16 @@ public class MainGUI extends JFrame {
      */
     private Border criarBordaArredondada() {
         return new AbstractBorder() {
+            /**
+             * Desenha a borda arredondada, mais forte quando o campo tem foco.
+             *
+             * @param c componente que usa a borda
+             * @param g contexto gráfico usado no desenho
+             * @param x posição horizontal da borda
+             * @param y posição vertical da borda
+             * @param width largura da área
+             * @param height altura da área
+             */
             @Override
             public void paintBorder(Component c, Graphics g, int x, int y, int width, int height) {
                 Graphics2D g2 = (Graphics2D) g.create();
@@ -1456,11 +1528,24 @@ public class MainGUI extends JFrame {
                 g2.dispose();
             }
 
+            /**
+             * Reserva o espaçamento interno da borda arredondada.
+             *
+             * @param c componente que usa a borda
+             * @return margens de 7 px na vertical e 12 px na horizontal
+             */
             @Override
             public Insets getBorderInsets(Component c) {
                 return new Insets(7, 12, 7, 12);
             }
 
+            /**
+             * Preenche as margens recebidas com o espaçamento da borda arredondada.
+             *
+             * @param c componente que usa a borda
+             * @param insets margens a preencher
+             * @return as mesmas margens, já preenchidas
+             */
             @Override
             public Insets getBorderInsets(Component c, Insets insets) {
                 insets.set(7, 12, 7, 12);
@@ -1664,6 +1749,16 @@ public class MainGUI extends JFrame {
      * (na cor de destaque) quando a tabela tem o foco do teclado, sem alterar o tamanho da área.
      */
     private final class BordaTabela extends AbstractBorder {
+        /**
+         * Desenha a borda da tabela e a destaca quando a tabela tem o foco do teclado.
+         *
+         * @param c componente que usa a borda
+         * @param g contexto gráfico usado no desenho
+         * @param x posição horizontal da borda
+         * @param y posição vertical da borda
+         * @param largura largura da área
+         * @param altura altura da área
+         */
         @Override
         public void paintBorder(Component c, Graphics g, int x, int y, int largura, int altura) {
             boolean comFoco = c instanceof JScrollPane rolagem
@@ -1675,11 +1770,24 @@ public class MainGUI extends JFrame {
             g.drawRect(x + 1, y + 1, largura - 3, altura - 3);
         }
 
+        /**
+         * Reserva 2 px em cada lado para a borda da tabela.
+         *
+         * @param c componente que usa a borda
+         * @return margens de 2 px
+         */
         @Override
         public Insets getBorderInsets(Component c) {
             return new Insets(2, 2, 2, 2);
         }
 
+        /**
+         * Preenche as margens recebidas com 2 px em cada lado.
+         *
+         * @param c componente que usa a borda
+         * @param insets margens a preencher
+         * @return as mesmas margens, já preenchidas
+         */
         @Override
         public Insets getBorderInsets(Component c, Insets insets) {
             insets.set(2, 2, 2, 2);
@@ -1689,6 +1797,17 @@ public class MainGUI extends JFrame {
 
     /** Células com espaçamento lateral, linhas alternadas e cor de destaque para as situações. */
     private final class RenderizadorCelula extends DefaultTableCellRenderer {
+        /**
+         * Aplica espaçamento, cor de seleção ou linha alternada e a cor da situação.
+         *
+         * @param tabela tabela que está sendo desenhada
+         * @param valor conteúdo da célula
+         * @param selecionada {@code true} se a linha estiver selecionada
+         * @param comFoco {@code true} se a célula tiver foco; o foco é desenhado na borda da tabela
+         * @param linha índice da linha
+         * @param coluna índice da coluna
+         * @return este renderizador, já configurado para a célula
+         */
         @Override
         public Component getTableCellRendererComponent(JTable tabela, Object valor, boolean selecionada,
                                                        boolean comFoco, int linha, int coluna) {
@@ -1735,6 +1854,17 @@ public class MainGUI extends JFrame {
 
     /** Cabeçalho plano, no tom do tema, no lugar do cabeçalho em relevo do Metal. */
     private final class RenderizadorCabecalho extends DefaultTableCellRenderer {
+        /**
+         * Aplica a fonte, o fundo e a divisória do cabeçalho da tabela.
+         *
+         * @param tabela tabela que está sendo desenhada
+         * @param valor título da coluna
+         * @param selecionada ignorado; o cabeçalho não usa seleção
+         * @param comFoco ignorado; o cabeçalho não desenha foco
+         * @param linha índice da linha
+         * @param coluna índice da coluna
+         * @return este renderizador, já configurado para o cabeçalho
+         */
         @Override
         public Component getTableCellRendererComponent(JTable tabela, Object valor, boolean selecionada,
                                                        boolean comFoco, int linha, int coluna) {
@@ -1754,6 +1884,7 @@ public class MainGUI extends JFrame {
      * usam texto secundário. Substitui o visual do Metal, que desenha contornos sempre brancos.
      */
     private final class AbasUI extends BasicTabbedPaneUI {
+        /** Define o espaçamento das abas e remove o relevo padrão. */
         @Override
         protected void installDefaults() {
             super.installDefaults();
@@ -1763,6 +1894,18 @@ public class MainGUI extends JFrame {
             contentBorderInsets = new Insets(1, 0, 0, 0);
         }
 
+        /**
+         * Pinta o fundo da aba: tom do cabeçalho se estiver selecionada, fundo da janela caso contrário.
+         *
+         * @param g contexto gráfico usado no desenho
+         * @param posicao posição das abas, não utilizada
+         * @param indice índice da aba
+         * @param x posição horizontal da aba
+         * @param y posição vertical da aba
+         * @param largura largura da aba
+         * @param altura altura da aba
+         * @param selecionada {@code true} se esta for a aba aberta
+         */
         @Override
         protected void paintTabBackground(Graphics g, int posicao, int indice,
                                           int x, int y, int largura, int altura, boolean selecionada) {
@@ -1770,6 +1913,18 @@ public class MainGUI extends JFrame {
             g.fillRect(x, y, largura, altura);
         }
 
+        /**
+         * Desenha a barra de destaque sob a aba selecionada.
+         *
+         * @param g contexto gráfico usado no desenho
+         * @param posicao posição das abas, não utilizada
+         * @param indice índice da aba
+         * @param x posição horizontal da aba
+         * @param y posição vertical da aba
+         * @param largura largura da aba
+         * @param altura altura da aba
+         * @param selecionada {@code true} se esta for a aba aberta
+         */
         @Override
         protected void paintTabBorder(Graphics g, int posicao, int indice,
                                       int x, int y, int largura, int altura, boolean selecionada) {
@@ -1779,6 +1934,18 @@ public class MainGUI extends JFrame {
             }
         }
 
+        /**
+         * Desenha o título da aba com a cor principal ou secundária do tema.
+         *
+         * @param g contexto gráfico usado no desenho
+         * @param posicao posição das abas, não utilizada
+         * @param fonte fonte do título
+         * @param medidas medidas da fonte
+         * @param indice índice da aba
+         * @param titulo texto da aba
+         * @param area área reservada ao texto
+         * @param selecionada {@code true} se esta for a aba aberta
+         */
         @Override
         protected void paintText(Graphics g, int posicao, Font fonte, FontMetrics medidas, int indice,
                                  String titulo, Rectangle area, boolean selecionada) {
@@ -1787,6 +1954,17 @@ public class MainGUI extends JFrame {
             g.drawString(titulo, area.x, area.y + medidas.getAscent());
         }
 
+        /**
+         * Desenha o anel de foco na aba selecionada quando o painel de abas tem o foco.
+         *
+         * @param g contexto gráfico usado no desenho
+         * @param posicao posição das abas, não utilizada
+         * @param retangulos áreas das abas
+         * @param indice índice da aba com foco
+         * @param areaIcone área do ícone, não utilizada
+         * @param areaTexto área do texto, não utilizada
+         * @param selecionada {@code true} se a aba com foco estiver selecionada
+         */
         @Override
         protected void paintFocusIndicator(Graphics g, int posicao, Rectangle[] retangulos, int indice,
                                            Rectangle areaIcone, Rectangle areaTexto, boolean selecionada) {
@@ -1800,6 +1978,13 @@ public class MainGUI extends JFrame {
             }
         }
 
+        /**
+         * Desenha a linha que separa as abas do conteúdo.
+         *
+         * @param g contexto gráfico usado no desenho
+         * @param posicao posição das abas
+         * @param indiceSelecionado índice da aba aberta, não utilizado
+         */
         @Override
         protected void paintContentBorder(Graphics g, int posicao, int indiceSelecionado) {
             int topo = calculateTabAreaHeight(posicao, runCount, maxTabHeight);
@@ -1810,22 +1995,40 @@ public class MainGUI extends JFrame {
 
     /** Barra de rolagem fina, sem setas, com o polegar arredondado. */
     private final class BarraRolagemUI extends BasicScrollBarUI {
+        /** Aplica as cores da trilha e do polegar do tema atual. */
         @Override
         protected void configureScrollBarColors() {
             thumbColor = paleta.barraRolagem();
             trackColor = paleta.campo();
         }
 
+        /**
+         * Oculta a seta de diminuir a rolagem.
+         *
+         * @param orientacao orientação da barra, não utilizada
+         * @return um botão sem tamanho
+         */
         @Override
         protected JButton createDecreaseButton(int orientacao) {
             return botaoVazio();
         }
 
+        /**
+         * Oculta a seta de aumentar a rolagem.
+         *
+         * @param orientacao orientação da barra, não utilizada
+         * @return um botão sem tamanho
+         */
         @Override
         protected JButton createIncreaseButton(int orientacao) {
             return botaoVazio();
         }
 
+        /**
+         * Cria um botão sem tamanho, usado no lugar das setas da barra de rolagem.
+         *
+         * @return botão com dimensões zeradas
+         */
         private JButton botaoVazio() {
             JButton botao = new JButton();
             Dimension zero = new Dimension(0, 0);
@@ -1835,12 +2038,26 @@ public class MainGUI extends JFrame {
             return botao;
         }
 
+        /**
+         * Pinta a trilha da barra de rolagem.
+         *
+         * @param g contexto gráfico usado no desenho
+         * @param c barra de rolagem
+         * @param area área da trilha
+         */
         @Override
         protected void paintTrack(Graphics g, JComponent c, Rectangle area) {
             g.setColor(trackColor);
             g.fillRect(area.x, area.y, area.width, area.height);
         }
 
+        /**
+         * Pinta o polegar arredondado, mais claro quando o mouse está sobre ele.
+         *
+         * @param g contexto gráfico usado no desenho
+         * @param c barra de rolagem
+         * @param area área do polegar
+         */
         @Override
         protected void paintThumb(Graphics g, JComponent c, Rectangle area) {
             if (area.isEmpty() || !scrollbar.isEnabled()) {
@@ -2013,11 +2230,13 @@ public class MainGUI extends JFrame {
 
             if (campo instanceof JTextField campoTexto) {
                 campoTexto.addFocusListener(new FocusAdapter() {
+                    /** Redesenha o campo quando ele recebe o foco. */
                     @Override
                     public void focusGained(FocusEvent evento) {
                         campoTexto.repaint();
                     }
 
+                    /** Redesenha o campo quando ele perde o foco. */
                     @Override
                     public void focusLost(FocusEvent evento) {
                         campoTexto.repaint();

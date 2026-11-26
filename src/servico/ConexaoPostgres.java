@@ -17,10 +17,12 @@ public class ConexaoPostgres {
     private static final String USUARIO = "postgres";
 
     /**
-     * Abre uma conexão com o PostgreSQL.
+     * Abre uma conexão com o PostgreSQL usando a senha da variável
+     * de ambiente {@code BIBLIOTECA_DB_PASSWORD}.
      *
      * @return conexão JDBC aberta
      * @throws SQLException se ocorrer um erro na conexão
+     * @throws IllegalStateException se a variável de ambiente não estiver definida
      */
     public static Connection conectar() throws SQLException {
 
