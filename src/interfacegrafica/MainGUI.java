@@ -193,6 +193,20 @@ public class MainGUI extends JFrame {
 
     // ------------------------------------------------------------------ montagem das telas
 
+    /**
+     * Configura as propriedades iniciais da janela principal.
+     *
+     * <p>Define o título da aplicação, o tamanho inicial
+     * e as dimensões mínimas permitidas, garantindo espaço
+     * adequado para a exibição dos componentes gráficos.</p>
+     *
+     * <p>Centraliza a janela na tela e configura o encerramento
+     * da aplicação quando o usuário fecha a janela principal.</p>
+     *
+     * <p>Também define a fonte padrão dos rótulos e botões
+     * utilizando o UIManager, mantendo a consistência
+     * visual da interface.</p>
+     */
     private void configurarJanela() {
         setTitle("Biblioteca - Sistema de Gestão de Acervo");
         setSize(960, 720);
@@ -252,6 +266,22 @@ public class MainGUI extends JFrame {
         return barraStatus;
     }
 
+    /**
+     * Cria o painel de gerenciamento de livros e revistas.
+     *
+     * <p>Organiza os campos de código, título, autor, ISBN
+     * e número da edição, permitindo cadastrar diferentes
+     * tipos de itens no mesmo formulário.</p>
+     *
+     * <p>Configura os botões de cadastro, edição, exclusão
+     * e limpeza, associando cada um à sua respectiva ação.</p>
+     *
+     * <p>Integra o formulário à tabela de itens, permitindo
+     * visualizar os registros cadastrados e selecionar
+     * um item para edição.</p>
+     *
+     * @return painel contendo o formulário e a tabela de itens
+     */
     private JPanel criarPainelItens() {
         Formulario formulario = new Formulario();
         tituloFormularioItem = formulario.adicionarTitulo("Novo item");
@@ -275,6 +305,22 @@ public class MainGUI extends JFrame {
         return montarPainel(formulario, tabelaItens);
     }
 
+    /**
+     * Cria o painel de gerenciamento dos usuários da biblioteca.
+     *
+     * <p>Organiza os campos de ID, nome e e-mail, permitindo
+     * cadastrar novos usuários e editar registros existentes.</p>
+     *
+     * <p>Configura os botões de cadastro, edição, exclusão
+     * e limpeza, associando cada um ao método responsável
+     * pela operação correspondente.</p>
+     *
+     * <p>Integra o formulário à tabela de usuários, permitindo
+     * visualizar os registros cadastrados e selecionar
+     * um usuário para edição ou exclusão.</p>
+     *
+     * @return painel contendo o formulário e a tabela de usuários
+     */
     private JPanel criarPainelUsuarios() {
         Formulario formulario = new Formulario();
         tituloFormularioUsuario = formulario.adicionarTitulo("Novo usuário");
@@ -294,6 +340,22 @@ public class MainGUI extends JFrame {
         return montarPainel(formulario, tabelaUsuarios);
     }
 
+    /**
+     * Cria o painel de gerenciamento de empréstimos e devoluções.
+     *
+     * <p>Organiza os campos para informar o código do item
+     * e o ID do usuário envolvido na operação.</p>
+     *
+     * <p>Configura os botões de empréstimo e devolução,
+     * associando cada um ao método responsável por executar
+     * a operação por meio da classe Biblioteca.</p>
+     *
+     * <p>Integra o formulário à tabela de empréstimos,
+     * permitindo consultar o histórico, as datas de empréstimo,
+     * os prazos de devolução e a situação de cada registro.</p>
+     *
+     * @return painel contendo o formulário e a tabela de empréstimos
+     */
     private JPanel criarPainelEmprestimos() {
         Formulario formulario = new Formulario();
         formulario.adicionarTitulo("Empréstimo e devolução");
@@ -307,6 +369,24 @@ public class MainGUI extends JFrame {
         return montarPainel(formulario, tabelaEmprestimos);
     }
 
+    /**
+     * Monta um painel contendo um formulário e uma tabela.
+     *
+     * <p>Utiliza o BorderLayout para posicionar o formulário
+     * na parte superior e a tabela na região central.</p>
+     *
+     * <p>Adiciona margens e espaçamentos para melhorar a organização
+     * visual, além de inserir a tabela em um JScrollPane,
+     * permitindo a navegação por barras de rolagem.</p>
+     *
+     * <p>Também configura o comportamento visual da tabela
+     * quando ela recebe ou perde o foco do teclado.</p>
+     *
+     * @param formulario painel que contém os campos e botões
+     *                   utilizados nas operações
+     * @param tabela tabela responsável por exibir os registros
+     * @return painel organizado com formulário e tabela
+     */
     private JPanel montarPainel(JPanel formulario, JTable tabela) {
         JPanel painel = new JPanel(new BorderLayout(12, 12));
         painel.setBorder(BorderFactory.createEmptyBorder(12, 14, 14, 14));
@@ -331,6 +411,24 @@ public class MainGUI extends JFrame {
         return painel;
     }
 
+    /**
+     * Cria um botão personalizado para a interface gráfica.
+     *
+     * <p>Utiliza a classe BotaoArredondado para manter
+     * a padronização visual dos botões do sistema.</p>
+     *
+     * <p>Configura o texto exibido, o atalho de teclado
+     * e a ação executada quando o botão é acionado.</p>
+     *
+     * <p>Também ajusta as dimensões do botão conforme
+     * o tamanho do texto, mantendo a consistência
+     * visual entre os diferentes formulários.</p>
+     *
+     * @param texto texto exibido no botão
+     * @param mnemonico tecla utilizada como atalho com Alt
+     * @param acao ação executada quando o botão é acionado
+     * @return botão configurado e pronto para ser adicionado à interface
+     */
     private JButton criarBotao(String texto, int mnemonico, java.awt.event.ActionListener acao) {
         JButton botao = new BotaoArredondado(texto);
         botao.setMnemonic(mnemonico);
@@ -345,6 +443,23 @@ public class MainGUI extends JFrame {
         botao.setPreferredSize(new Dimension(Math.max(112, larguraTexto + 40), 36));
     }
 
+    /**
+     * Cria um modelo de tabela com as colunas informadas.
+     *
+     * <p>Utiliza a classe DefaultTableModel para organizar
+     * os dados apresentados nas tabelas da interface.</p>
+     *
+     * <p>Sobrescreve o método isCellEditable() para impedir
+     * a edição direta das células. Dessa forma, as alterações
+     * são realizadas pelos formulários, respeitando as
+     * validações e regras de negócio da aplicação.</p>
+     *
+     * <p>O mesmo método é reutilizado nas tabelas de itens,
+     * usuários e empréstimos, evitando duplicação de código.</p>
+     *
+     * @param colunas nomes das colunas que serão exibidas na tabela
+     * @return modelo de tabela configurado com células não editáveis
+     */
     private static DefaultTableModel criarModelo(String... colunas) {
         return new DefaultTableModel(colunas, 0) {
             @Override
@@ -470,6 +585,19 @@ public class MainGUI extends JFrame {
 
     // ------------------------------------------------------------------ estado do formulário
 
+    /**
+     * Verifica se o tipo de item selecionado no formulário é um livro.
+     *
+     * <p>Consulta a opção escolhida no seletor de tipos,
+     * permitindo que a interface identifique se deve utilizar
+     * os campos específicos de livros ou revistas.</p>
+     *
+     * <p>Esse método também auxilia no direcionamento das
+     * operações de cadastro e edição conforme o tipo do item.</p>
+     *
+     * @return true se a opção selecionada for "Livro",
+     *         ou false se for outro tipo de item
+     */
     private boolean livroSelecionado() {
         return "Livro".equals(seletorTipo.getSelectedItem());
     }
@@ -487,6 +615,20 @@ public class MainGUI extends JFrame {
         getContentPane().repaint();
     }
 
+    /**
+     * Prepara o formulário para editar um item selecionado na tabela.
+     *
+     * <p>Carrega o código, o título e os dados específicos do item,
+     * como autor e ISBN para livros ou número da edição para revistas.</p>
+     *
+     * <p>Durante a edição, bloqueia a alteração do código e do tipo
+     * do item, preservando sua identificação original.</p>
+     *
+     * <p>Também atualiza o título do formulário e habilita os botões
+     * correspondentes às operações de edição e exclusão.</p>
+     *
+     * @param item livro ou revista selecionado para edição
+     */
     private void entrarEdicaoItem(ItemBiblioteca item) {
         codigoItemEmEdicao = item.getCodigo();
         seletorTipo.setSelectedItem(item.getTipo());
@@ -508,6 +650,16 @@ public class MainGUI extends JFrame {
         atualizarEstadoBotoes();
     }
 
+    /**
+     * Limpa os campos do formulário de itens e restaura o modo de cadastro.
+     *
+     * <p>Remove os dados preenchidos, encerra o modo de edição
+     * e permite novamente a alteração do código e do tipo do item.</p>
+     *
+     * <p>Também restaura o título do formulário para "Novo item",
+     * desfaz a seleção da tabela e atualiza os botões disponíveis
+     * para o usuário.</p>
+     */
     private void limparFormularioItem() {
         codigoItemEmEdicao = null;
         campoCodigo.setText("");
@@ -523,6 +675,20 @@ public class MainGUI extends JFrame {
         atualizarEstadoBotoes();
     }
 
+    /**
+     * Prepara o formulário para editar um usuário cadastrado.
+     *
+     * <p>Carrega o ID, o nome e o e-mail do usuário selecionado
+     * na tabela, permitindo a alteração de seus dados.</p>
+     *
+     * <p>Durante a edição, bloqueia a alteração do ID para
+     * preservar a identificação original do usuário.</p>
+     *
+     * <p>Também atualiza o título do formulário e habilita
+     * os botões de salvar alterações e excluir.</p>
+     *
+     * @param usuario usuário selecionado para edição
+     */
     private void entrarEdicaoUsuario(Usuario usuario) {
         idUsuarioEmEdicao = usuario.getId();
         campoIdUsuario.setText(String.valueOf(usuario.getId()));
@@ -533,6 +699,16 @@ public class MainGUI extends JFrame {
         atualizarEstadoBotoes();
     }
 
+    /**
+     * Limpa os campos do formulário de usuários e restaura o modo de cadastro.
+     *
+     * <p>Remove os valores de ID, nome e e-mail e encerra o modo de edição,
+     * permitindo que um novo usuário seja cadastrado.</p>
+     *
+     * <p>Também desbloqueia o campo de ID, restaura o título do formulário
+     * para "Novo usuário", remove a seleção da tabela e atualiza
+     * os botões disponíveis.</p>
+     */
     private void limparFormularioUsuario() {
         idUsuarioEmEdicao = null;
         campoIdUsuario.setText("");
@@ -544,13 +720,35 @@ public class MainGUI extends JFrame {
         atualizarEstadoBotoes();
     }
 
+    /**
+     * Limpa o formulário de empréstimos e devoluções.
+     *
+     * <p>Remove o código do item e o ID do usuário informados
+     * anteriormente, preparando os campos para uma nova operação.</p>
+     *
+     * <p>Também desfaz a seleção na tabela de empréstimos,
+     * evitando que os dados de um registro anterior permaneçam
+     * preenchidos no formulário.</p>
+     */
     private void limparFormularioEmprestimo() {
         campoCodigoEmprestimo.setText("");
         campoIdEmprestimo.setText("");
         tabelaEmprestimos.clearSelection();
     }
 
-    /** Campos bloqueados (como o código de um item em edição) ficam com o fundo da janela. */
+    /**
+     * Define se um campo de texto pode ser editado pelo usuário.
+     *
+     * <p>Habilita ou bloqueia a edição conforme o valor informado,
+     * sendo utilizado principalmente para impedir alterações
+     * nos identificadores de registros já cadastrados.</p>
+     *
+     * <p>Também ajusta a cor de fundo do campo de acordo com
+     * seu estado, mantendo a consistência com o tema atual.</p>
+     *
+     * @param campo campo de texto que terá seu estado alterado
+     * @param editavel true para permitir a edição ou false para bloqueá-la
+     */
     private void definirEditavel(JTextField campo, boolean editavel) {
         campo.setEditable(editavel);
         campo.setBackground(editavel ? paleta.campo() : paleta.fundo());
@@ -592,6 +790,16 @@ public class MainGUI extends JFrame {
 
     // ------------------------------------------------------------------ operações de negócio
 
+    /**
+     * Direciona o cadastro conforme o tipo de item selecionado.
+     *
+     * <p>Verifica se o usuário selecionou Livro ou Revista
+     * no formulário e chama o método responsável pelo
+     * cadastro do tipo correspondente.</p>
+     *
+     * <p>Essa separação permite reutilizar o mesmo formulário
+     * para diferentes tipos de itens da biblioteca.</p>
+     */
     private void cadastrarItem() {
         if (livroSelecionado()) {
             cadastrarLivro();
@@ -600,6 +808,22 @@ public class MainGUI extends JFrame {
         }
     }
 
+    /**
+     * Realiza o cadastro de um novo livro na biblioteca.
+     *
+     * <p>Obtém o código, título, autor e ISBN informados
+     * no formulário e cria um objeto da classe Livro,
+     * responsável por validar esses dados.</p>
+     *
+     * <p>Encaminha o objeto para a classe Biblioteca,
+     * que verifica as regras de negócio e realiza
+     * o armazenamento por meio do repositório.</p>
+     *
+     * <p>A operação é executada em segundo plano para evitar
+     * travamentos na interface gráfica. Após o sucesso,
+     * limpa o formulário, exibe uma mensagem de confirmação
+     * e atualiza as tabelas.</p>
+     */
     private void cadastrarLivro() {
         executar(() -> {
             Livro livro = new Livro(campoCodigo.getText().trim(), campoTitulo.getText().trim(),
@@ -611,6 +835,25 @@ public class MainGUI extends JFrame {
         }, this::limparFormularioItem);
     }
 
+    /**
+     * Realiza o cadastro de uma nova revista na biblioteca.
+     *
+     * <p>Obtém o código, o título e o número da edição
+     * informados no formulário e cria um objeto da classe
+     * Revista, responsável por validar seus dados.</p>
+     *
+     * <p>Converte o número da edição para um valor inteiro
+     * utilizando o método lerInteiro().</p>
+     *
+     * <p>Encaminha o objeto para a classe Biblioteca,
+     * responsável por aplicar as regras de negócio
+     * e armazenar o registro por meio do repositório.</p>
+     *
+     * <p>A operação é executada em segundo plano para evitar
+     * travamentos na interface gráfica. Após o cadastro
+     * bem-sucedido, limpa o formulário, apresenta uma
+     * mensagem de sucesso e atualiza as tabelas.</p>
+     */
     private void cadastrarRevista() {
         executar(() -> {
             Revista revista = new Revista(campoCodigo.getText().trim(), campoTitulo.getText().trim(),
@@ -622,6 +865,15 @@ public class MainGUI extends JFrame {
         }, this::limparFormularioItem);
     }
 
+    /**
+     * Salva as alterações realizadas em um item selecionado.
+     *
+     * <p>Verifica se o item é um livro ou uma revista e encaminha
+     * os dados atualizados para a classe Biblioteca.</p>
+     *
+     * <p>Após a atualização bem-sucedida, limpa o formulário
+     * e atualiza as informações exibidas nas tabelas.</p>
+     */
     private void salvarItem() {
         String codigo = codigoItemEmEdicao;
         if (codigo == null) {
@@ -645,6 +897,18 @@ public class MainGUI extends JFrame {
         }, this::limparFormularioItem);
     }
 
+    /**
+     * Solicita a exclusão de um item selecionado na tabela.
+     *
+     * <p>Verifica se existe um item em edição e apresenta uma
+     * mensagem de confirmação para evitar exclusões acidentais.</p>
+     *
+     * <p>Se o usuário confirmar, encaminha a exclusão para
+     * a classe Biblioteca, responsável pelas regras de negócio.</p>
+     *
+     * <p>Após a exclusão bem-sucedida, limpa o formulário
+     * e atualiza as tabelas da interface.</p>
+     */
     private void excluirItem() {
         String codigo = codigoItemEmEdicao;
         if (codigo == null || !confirmar("Excluir o item " + codigo + "?\nEsta ação não pode ser desfeita.")) {
@@ -656,6 +920,19 @@ public class MainGUI extends JFrame {
         }, this::limparFormularioItem);
     }
 
+    /**
+     * Realiza o cadastro de um novo usuário na biblioteca.
+     *
+     * <p>Obtém o ID, o nome e o e-mail informados no formulário
+     * e cria um objeto da classe Usuario, que valida seus dados.</p>
+     *
+     * <p>Encaminha o cadastro para a classe Biblioteca,
+     * responsável pelas regras de negócio e pela persistência
+     * dos dados por meio do repositório.</p>
+     *
+     * <p>Após o cadastro bem-sucedido, limpa o formulário,
+     * exibe uma mensagem de sucesso e atualiza as tabelas.</p>
+     */
     private void cadastrarUsuario() {
         executar(() -> {
             Usuario usuario = new Usuario(lerInteiro(campoIdUsuario.getText(), "ID"),
@@ -667,6 +944,19 @@ public class MainGUI extends JFrame {
         }, this::limparFormularioUsuario);
     }
 
+    /**
+     * Salva as alterações de um usuário cadastrado na biblioteca.
+     *
+     * <p>Verifica se existe um usuário selecionado para edição
+     * e obtém os novos valores de nome e e-mail do formulário.</p>
+     *
+     * <p>Encaminha os dados para a classe Biblioteca, que aplica
+     * as regras de negócio e atualiza o registro no repositório,
+     * mantendo o identificador original do usuário.</p>
+     *
+     * <p>Após a atualização bem-sucedida, limpa o formulário,
+     * exibe uma mensagem de sucesso e atualiza as tabelas.</p>
+     */
     private void salvarUsuario() {
         Integer id = idUsuarioEmEdicao;
         if (id == null) {
@@ -682,6 +972,20 @@ public class MainGUI extends JFrame {
         }, this::limparFormularioUsuario);
     }
 
+    /**
+     * Solicita a exclusão de um usuário cadastrado na biblioteca.
+     *
+     * <p>Verifica se existe um usuário selecionado para exclusão
+     * e apresenta uma mensagem de confirmação, evitando que
+     * registros sejam removidos acidentalmente.</p>
+     *
+     * <p>Após a confirmação, encaminha a solicitação para a classe
+     * Biblioteca, responsável por verificar as regras de negócio
+     * e realizar a exclusão por meio do repositório.</p>
+     *
+     * <p>Se a operação for concluída com sucesso, limpa o formulário,
+     * exibe uma mensagem de confirmação e atualiza as tabelas.</p>
+     */
     private void excluirUsuario() {
         Integer id = idUsuarioEmEdicao;
         if (id == null || !confirmar("Excluir o usuário " + id + "?\nEsta ação não pode ser desfeita.")) {
@@ -693,6 +997,19 @@ public class MainGUI extends JFrame {
         }, this::limparFormularioUsuario);
     }
 
+    /**
+     * Realiza o empréstimo de um item para um usuário da biblioteca.
+     *
+     * <p>Obtém o código do item e o ID do usuário informados
+     * no formulário, encaminhando os dados para a classe Biblioteca.</p>
+     *
+     * <p>A camada de serviço verifica se o item e o usuário existem
+     * e se o item está disponível para empréstimo.</p>
+     *
+     * <p>Após a operação bem-sucedida, apresenta as datas de
+     * empréstimo e devolução prevista, limpa o formulário
+     * e atualiza as tabelas da interface.</p>
+     */
     private void fazerEmprestimo() {
         executar(() -> {
             String codigo = campoCodigoEmprestimo.getText().trim();
@@ -705,6 +1022,20 @@ public class MainGUI extends JFrame {
         }, this::limparFormularioEmprestimo);
     }
 
+    /**
+     * Registra a devolução de um item emprestado na biblioteca.
+     *
+     * <p>Obtém o código do item informado no formulário e
+     * encaminha a solicitação para a classe Biblioteca.</p>
+     *
+     * <p>A camada de serviço verifica se existe um empréstimo
+     * ativo para o item e realiza a devolução, atualizando
+     * o estado do empréstimo e a disponibilidade do item.</p>
+     *
+     * <p>Após a operação bem-sucedida, limpa o formulário,
+     * apresenta uma mensagem de sucesso e atualiza as tabelas
+     * para refletir as alterações realizadas.</p>
+     */
     private void fazerDevolucao() {
         executar(() -> {
             String codigo = campoCodigoEmprestimo.getText().trim();
@@ -833,6 +1164,23 @@ public class MainGUI extends JFrame {
                              List<Emprestimo> emprestimos) {
     }
 
+    /**
+     * Atualiza os dados exibidos nas tabelas da biblioteca.
+     *
+     * <p>Consulta as listas de itens, usuários e empréstimos
+     * por meio da classe Biblioteca, utilizando um SwingWorker
+     * para executar as consultas em segundo plano.</p>
+     *
+     * <p>Durante o carregamento, sinaliza que existe uma
+     * operação em andamento, controlando a disponibilidade
+     * dos botões da interface.</p>
+     *
+     * <p>Após a conclusão, utiliza o método exibir() para
+     * preencher as tabelas na thread de eventos do Swing.</p>
+     *
+     * <p>Se ocorrer uma falha durante a consulta, encaminha
+     * a exceção para o tratamento de erros da interface.</p>
+     */
     private void atualizarListas() {
         definirOcupado(true);
         new SwingWorker<DadosTela, Void>() {
@@ -856,6 +1204,25 @@ public class MainGUI extends JFrame {
         }.execute();
     }
 
+    /**
+     * Exibe os dados atualizados nas tabelas da biblioteca.
+     *
+     * <p>Limpa os registros anteriormente apresentados e preenche
+     * as tabelas de itens, usuários e empréstimos com os dados
+     * recebidos das consultas realizadas pela camada de serviço.</p>
+     *
+     * <p>Organiza os itens e usuários em mapas para facilitar
+     * sua identificação quando uma linha é selecionada para edição.</p>
+     *
+     * <p>Apresenta os empréstimos em ordem inversa à recebida,
+     * incluindo as datas e a situação de cada registro.</p>
+     *
+     * <p>Também apresenta a disponibilidade dos itens e o
+     * estado dos empréstimos, facilitando a consulta pelo usuário.</p>
+     *
+     * @param dados objeto que contém as listas atualizadas
+     *              de itens, usuários e empréstimos
+     */
     private void exibir(DadosTela dados) {
         itensPorCodigo.clear();
         modeloItens.setRowCount(0);
@@ -891,6 +1258,19 @@ public class MainGUI extends JFrame {
         }
     }
 
+    /**
+     * Converte o status de um empréstimo em uma descrição textual.
+     *
+     * <p>Consulta o estado atual do empréstimo e utiliza uma
+     * estrutura switch para identificar sua situação.</p>
+     *
+     * <p>Os estados ATIVO, DEVOLVIDO e EXPIRADO são apresentados
+     * respectivamente como "Ativo", "Devolvido" e "Expirado",
+     * facilitando a compreensão das informações na tabela.</p>
+     *
+     * @param emprestimo objeto cujo status será consultado
+     * @return descrição textual da situação do empréstimo
+     */
     private String descreverSituacao(Emprestimo emprestimo) {
         return switch (emprestimo.getStatusAtual()) {
             case ATIVO -> "Ativo";
@@ -899,6 +1279,26 @@ public class MainGUI extends JFrame {
         };
     }
 
+    /**
+     * Converte o texto informado em um número inteiro.
+     *
+     * <p>Remove os espaços em branco no início e no final
+     * do texto e tenta converter seu conteúdo utilizando
+     * o método Integer.parseInt().</p>
+     *
+     * <p>Se o valor informado não representar um número inteiro
+     * válido, lança uma IllegalArgumentException com uma mensagem
+     * que identifica o campo responsável pelo erro.</p>
+     *
+     * <p>Esse método é utilizado para validar entradas numéricas,
+     * como o ID do usuário e o número da edição de uma revista.</p>
+     *
+     * @param texto valor textual que será convertido
+     * @param nomeCampo nome do campo utilizado na mensagem de erro
+     * @return número inteiro obtido após a conversão
+     * @throws IllegalArgumentException se o texto não representar
+     *         um número inteiro válido
+     */
     private int lerInteiro(String texto, String nomeCampo) {
         try {
             return Integer.parseInt(texto.trim());
@@ -920,6 +1320,19 @@ public class MainGUI extends JFrame {
         temporizadorStatus.restart();
     }
 
+    /**
+     * Atualiza a mensagem exibida na barra de status da interface.
+     *
+     * <p>Interrompe o temporizador responsável por limpar mensagens
+     * anteriores e define o novo texto informado ao usuário.</p>
+     *
+     * <p>Também registra o tipo da mensagem, que pode representar
+     * uma informação, um sucesso ou um erro, e chama o método
+     * colorirStatus() para aplicar a cor correspondente.</p>
+     *
+     * @param mensagem texto que será exibido na barra de status
+     * @param tipo categoria da mensagem, definida pelo enum TipoMensagem
+     */
     private void mostrarStatus(String mensagem, TipoMensagem tipo) {
         temporizadorStatus.stop();
         tipoStatus = tipo;
@@ -927,6 +1340,20 @@ public class MainGUI extends JFrame {
         colorirStatus();
     }
 
+    /**
+     * Define a cor da mensagem exibida na barra de status.
+     *
+     * <p>Utiliza uma estrutura switch para identificar o tipo
+     * da mensagem, que pode ser SUCESSO, ERRO ou INFO.</p>
+     *
+     * <p>Aplica a cor correspondente utilizando a paleta
+     * do tema atual, permitindo que as mensagens sejam
+     * identificadas visualmente pelo usuário.</p>
+     *
+     * <p>Esse método também é utilizado durante a troca
+     * de tema para manter as cores das mensagens
+     * consistentes com a aparência da interface.</p>
+     */
     private void colorirStatus() {
         rotuloStatus.setForeground(switch (tipoStatus) {
             case SUCESSO -> paleta.sucesso();
@@ -937,13 +1364,38 @@ public class MainGUI extends JFrame {
 
     // ------------------------------------------------------------------ aparência
 
+    /**
+     * Alterna entre os temas claro e escuro da interface gráfica.
+     *
+     * <p>Inverte o valor do atributo modoEscuro, que controla
+     * qual tema está ativo na aplicação.</p>
+     *
+     * <p>Em seguida, chama o método aplicarTema() para atualizar
+     * as cores dos componentes, mantendo a consistência visual
+     * da interface.</p>
+     *
+     * <p>O usuário pode executar essa ação pelo botão de tema
+     * ou pelo atalho de teclado Ctrl+T.</p>
+     */
     private void alternarTema() {
         modoEscuro = !modoEscuro;
         aplicarTema();
     }
 
-    /** Troca o botão de seta do seletor por um mais simples, combinando com os campos arredondados. */
-    private void estilizarSeletor() {
+    /**
+     * Personaliza a aparência do seletor de tipos de itens.
+     *
+     * <p>Utiliza uma implementação de BasicComboBoxUI para
+     * substituir o botão padrão do JComboBox por uma seta
+     * desenhada manualmente com Graphics2D.</p>
+     *
+     * <p>Configura a aparência da seta, remove bordas
+     * desnecessárias e ajusta suas dimensões para manter
+     * a consistência com os campos arredondados da interface.</p>
+     *
+     * <p>Também define a fonte do seletor, mantendo a
+     * padronização visual utilizada no sistema.</p>
+     */    private void estilizarSeletor() {
         seletorTipo.setUI(new BasicComboBoxUI() {
             @Override
             protected JButton createArrowButton() {
@@ -970,6 +1422,21 @@ public class MainGUI extends JFrame {
         seletorTipo.setFont(new Font(FONTE, Font.PLAIN, 14));
     }
 
+    /**
+     * Cria uma borda arredondada personalizada para os componentes.
+     *
+     * <p>Utiliza uma implementação de AbstractBorder para desenhar
+     * bordas com cantos arredondados por meio de Graphics2D.</p>
+     *
+     * <p>A cor e a espessura da borda são ajustadas conforme
+     * o componente recebe ou perde o foco do teclado, utilizando
+     * as cores definidas pela paleta do tema atual.</p>
+     *
+     * <p>Também define os espaçamentos internos da borda,
+     * mantendo uma apresentação consistente dos campos.</p>
+     *
+     * @return borda arredondada configurada conforme o tema atual
+     */
     private Border criarBordaArredondada() {
         return new AbstractBorder() {
             @Override
@@ -997,6 +1464,20 @@ public class MainGUI extends JFrame {
         };
     }
 
+    /**
+     * Aplica o tema visual selecionado à interface gráfica.
+     *
+     * <p>Define a paleta de cores conforme o valor do atributo
+     * modoEscuro, selecionando o tema claro ou escuro.</p>
+     *
+     * <p>Atualiza as cores dos componentes, da lista do seletor
+     * de tipos e da barra de status, garantindo uma aparência
+     * consistente entre as diferentes partes da interface.</p>
+     *
+     * <p>Também configura as cores dos componentes desabilitados,
+     * atualiza o texto do botão de alternância de tema
+     * e solicita o redesenho da janela.</p>
+     */
     private void aplicarTema() {
         paleta = modoEscuro ? Paleta.ESCURO : Paleta.CLARO;
 
@@ -1015,6 +1496,27 @@ public class MainGUI extends JFrame {
         repaint();
     }
 
+    /**
+     * Aplica as cores da paleta atual aos componentes da interface.
+     *
+     * <p>Identifica o tipo de componente Swing recebido e configura
+     * suas cores de fundo, texto, seleção e bordas conforme o tema
+     * claro ou escuro selecionado.</p>
+     *
+     * <p>Personaliza campos de texto, seletores, botões e tabelas,
+     * respeitando seus diferentes estados, como edição bloqueada
+     * e botões desabilitados.</p>
+     *
+     * <p>Quando o componente é um Container, percorre seus
+     * componentes internos de forma recursiva, garantindo
+     * a aplicação do tema em toda a interface.</p>
+     *
+     * <p>Também encaminha os componentes JScrollPane para
+     * a configuração específica de suas barras de rolagem.</p>
+     *
+     * @param componente componente Swing que receberá
+     *                   as cores da paleta atual
+     */
     private void aplicarCores(Component componente) {
         if (componente instanceof JScrollBar) {
             return; // as barras de rolagem são tratadas junto com o JScrollPane
@@ -1072,8 +1574,20 @@ public class MainGUI extends JFrame {
     }
 
     /**
-     * Borda discreta (que destaca a tabela quando ela tem o foco), fundo da área vazia e
-     * barras de rolagem no tom do tema.
+     * Personaliza a aparência da área de rolagem das tabelas.
+     *
+     * <p>Aplica uma borda personalizada por meio da classe
+     * BordaTabela, destacando visualmente a tabela quando
+     * ela recebe o foco do teclado.</p>
+     *
+     * <p>Configura o fundo da área de visualização e utiliza
+     * a classe BarraRolagemUI para personalizar as barras
+     * de rolagem vertical e horizontal.</p>
+     *
+     * <p>Também ajusta a cor do canto superior direito
+     * conforme a paleta do tema atual.</p>
+     *
+     * @param rolagem componente JScrollPane que será personalizado
      */
     private void estilizarRolagem(JScrollPane rolagem) {
         rolagem.setBorder(new BordaTabela());
@@ -1085,7 +1599,21 @@ public class MainGUI extends JFrame {
         rolagem.setCorner(JScrollPane.UPPER_RIGHT_CORNER, canto);
     }
 
-    /** A lista que abre no seletor não faz parte da janela, então recebe as cores à parte. */
+    /**
+     * Personaliza a aparência da lista suspensa do seletor de itens.
+     *
+     * <p>Obtém a lista interna do JComboBox por meio de
+     * BasicComboPopup e aplica as cores definidas pela
+     * paleta do tema atual.</p>
+     *
+     * <p>Configura as cores de fundo, texto e seleção,
+     * garantindo que as opções Livro e Revista permaneçam
+     * legíveis nos modos claro e escuro.</p>
+     *
+     * <p>Também aplica uma borda ao menu suspenso,
+     * mantendo a consistência visual com os demais
+     * componentes da interface.</p>
+     */
     private void estilizarListaDoSeletor() {
         if (seletorTipo.getUI().getAccessibleChild(seletorTipo, 0) instanceof BasicComboPopup popup) {
             JList<Object> lista = popup.getList();
@@ -1171,6 +1699,24 @@ public class MainGUI extends JFrame {
             return this;
         }
 
+        /**
+         * Define a cor de um valor apresentado nas tabelas.
+         *
+         * <p>Analisa o conteúdo recebido e utiliza uma estrutura
+         * switch para selecionar a cor correspondente à situação
+         * do registro.</p>
+         *
+         * <p>Os estados "Disponível" e "Ativo" utilizam a cor de
+         * sucesso, "Emprestado" utiliza a cor de aviso e
+         * "Expirado" utiliza a cor de erro.</p>
+         *
+         * <p>Os valores "Devolvido" e "-" recebem uma cor
+         * secundária. Para os demais valores, utiliza a cor
+         * padrão de texto da paleta atual.</p>
+         *
+         * @param valor conteúdo da célula que será analisado
+         * @return cor correspondente ao valor e ao tema atual
+         */
         private Color corDoValor(Object valor) {
             return switch (String.valueOf(valor)) {
                 case "Disponível", "Ativo" -> paleta.sucesso();
@@ -1331,6 +1877,20 @@ public class MainGUI extends JFrame {
     private static final class Formulario extends JPanel {
         private int linha = 0;
 
+        /**
+         * Inicializa a estrutura visual de um formulário da biblioteca.
+         *
+         * <p>Utiliza o GridBagLayout para organizar os componentes
+         * em linhas e colunas, permitindo controlar o alinhamento
+         * dos rótulos, campos e botões.</p>
+         *
+         * <p>Define as margens internas do formulário e adiciona
+         * um espaço flexível na terceira coluna, evitando que
+         * os campos sejam esticados em janelas maiores.</p>
+         *
+         * <p>Essa estrutura é reutilizada nos formulários de
+         * itens, usuários e empréstimos.</p>
+         */
         Formulario() {
             super(new GridBagLayout());
             setBorder(BorderFactory.createEmptyBorder(4, 4, 10, 4));
@@ -1343,9 +1903,20 @@ public class MainGUI extends JFrame {
         }
 
         /**
-         * Adiciona o título do formulário.
+         * Adiciona um título ao formulário da biblioteca.
          *
-         * @return o rótulo do título, para que possa indicar o modo (novo ou edição)
+         * <p>Cria um JLabel com o texto informado e configura
+         * sua fonte para destacar o título visualmente.</p>
+         *
+         * <p>Utiliza GridBagConstraints para posicionar o título
+         * na parte superior do formulário, ocupando as três colunas
+         * disponíveis.</p>
+         *
+         * <p>Retorna o componente criado para permitir que seu texto
+         * seja atualizado conforme o modo de cadastro ou edição.</p>
+         *
+         * @param titulo texto que será exibido no título do formulário
+         * @return JLabel criado e configurado para o formulário
          */
         JLabel adicionarTitulo(String titulo) {
             JLabel rotuloTitulo = new JLabel(titulo);
@@ -1361,6 +1932,26 @@ public class MainGUI extends JFrame {
             return rotuloTitulo;
         }
 
+        /**
+         * Adiciona um campo e seu respectivo rótulo ao formulário.
+         *
+         * <p>Cria um JLabel com o texto informado e organiza
+         * o rótulo e o componente em duas colunas, utilizando
+         * GridBagConstraints para controlar o posicionamento,
+         * o alinhamento e os espaçamentos.</p>
+         *
+         * <p>Associa o rótulo ao componente por meio de setLabelFor(),
+         * facilitando a identificação do campo e contribuindo
+         * para a acessibilidade da interface.</p>
+         *
+         * <p>O método permite adicionar diferentes componentes Swing,
+         * como JTextField e JComboBox, mantendo a mesma organização
+         * visual nos formulários.</p>
+         *
+         * @param texto texto exibido no rótulo do campo
+         * @param campo componente Swing que será adicionado ao formulário
+         * @return rótulo JLabel associado ao componente
+         */
         JLabel adicionarCampo(String texto, JComponent campo) {
             JLabel rotulo = new JLabel(texto);
             rotulo.setLabelFor(campo);
@@ -1396,7 +1987,24 @@ public class MainGUI extends JFrame {
             return rotulo;
         }
 
-        /** Adiciona os botões abaixo dos campos, começando na mesma linha vertical deles. */
+        /**
+         * Adiciona e organiza os botões de ação do formulário.
+         *
+         * <p>Recebe uma quantidade variável de botões e os
+         * posiciona em uma área destinada às operações
+         * disponíveis para o usuário.</p>
+         *
+         * <p>Mantém o alinhamento e o espaçamento entre os botões,
+         * garantindo uma organização visual consistente nos
+         * formulários de itens, usuários e empréstimos.</p>
+         *
+         * <p>Permite reutilizar a mesma estrutura para diferentes
+         * conjuntos de ações, evitando a repetição de código
+         * na montagem das telas.</p>
+         *
+         * @param botoes botões que serão adicionados ao formulário,
+         *               na ordem em que devem ser apresentados
+         */
         void adicionarAcoes(JButton... botoes) {
             JPanel faixa = new JPanel();
             faixa.setLayout(new BoxLayout(faixa, BoxLayout.X_AXIS));
