@@ -1,176 +1,474 @@
-# TrabalhoPOO da Sistema de Biblioteca
+# Sistema Biblioteca --- Trabalho 2 de POO
 
-Sistema de biblioteca em Java, desenvolvido para a disciplina de Programação Orientada a Objetos. Permite cadastrar livros, revistas e usuários, listar o acervo e controlar empréstimos e devoluções, com prazo de devolução e liberação automática do item. O sistema é usado por uma interface gráfica feita em Swing.
+Sistema de gestão de acervo de biblioteca, desenvolvido em Java para a
+disciplina de Programação Orientada a Objetos.
 
+A aplicação permite cadastrar, consultar, editar e excluir livros,
+revistas e usuários, além de registrar empréstimos e devoluções. Cada
+empréstimo possui prazo de dois dias, e o sistema controla a situação do
+empréstimo e a disponibilidade dos itens.
+
+A interface gráfica foi desenvolvida com **Java Swing**, com modos claro
+e escuro. Os dados são armazenados em **SQLite**, com inicialização
+automática da estrutura do banco.
+
+## Integrantes
+
+-   Luis Felipe
+-   Luis Eduardo
+-   Murilo Dias
+-   Vinicius Sanchotene
+-   Pietro Zinelli
+-   Emanuel Villa
+
+## Requisitos
+
+  Requisito           Versão / descrição
+  ------------------- ------------------------------------------------
+  Java                **JDK 17 ou superior**
+  Banco de dados      SQLite
+  Driver JDBC         `sqlite-jdbc-3.54.1.0.jar`, incluído em `lib/`
+  Interface gráfica   Java Swing
+
+O código-fonte foi compilado com sucesso usando `javac --release 17`.
+Isso confirma a compatibilidade da compilação com Java 17. O projeto não
+possui `pom.xml` nem `build.gradle`; a dependência SQLite é fornecida
+pelo JAR incluído no repositório.
+
+Não é necessário instalar um servidor de banco de dados. O SQLite
+utiliza um arquivo local. O Swing já faz parte do JDK, portanto não é
+necessário instalar JavaFX para executar esta aplicação.
 
 ## Como executar
 
-O Sistema Biblioteca pode ser executado em qualquer IDE compatível com Java, como IntelliJ IDEA, Eclipse, NetBeans ou Visual Studio Code, desde que o ambiente esteja configurado corretamente.
+Execute os comandos a partir da **pasta raiz do projeto**, aquela que
+contém `src/`, `lib/` e `sql/`.
 
-### Requisitos
+### Windows --- PowerShell
 
-- JDK compatível com a versão Java utilizada no projeto.
-- Driver JDBC `org.xerial:sqlite-jdbc:3.54.1.0`.
-- Arquivo `sql/schema.sql`, disponível no repositório.
+Crie a pasta de saída e compile:
 
-### Passos para execução
+``` powershell
+New-Item -ItemType Directory -Force bin | Out-Null
 
-1. Abra o projeto na IDE de sua preferência.
-2. Configure o driver SQLite JDBC nas dependências do projeto, caso ainda não esteja disponível.
-3. Na primeira execução, inicialize as tabelas do banco `biblioteca.db` utilizando o script `sql/schema.sql`.
-4. Execute a classe `interfacegrafica.MainGUI`.
+$arquivos = Get-ChildItem -Path src -Recurse -Filter *.java | ForEach-Object { $_.FullName }
 
-**Observações:**
-
-- Não é necessário instalar um servidor de banco de dados, pois o SQLite funciona diretamente com arquivos locais.
-- O banco mantém os dados cadastrados mesmo após fechar a aplicação.
-- A criação automática das tabelas ainda está em desenvolvimento.
-
-
-Não é preciso instalar nenhuma biblioteca: o Swing já vem junto com o Java.
-
-
-## Estrutura de pacotes
-
-O projeto está organizado em pacotes, separando as entidades, as regras de negócio, o armazenamento dos dados e a interface gráfica.
-
-```text
-src/
-  modelo/
-    ItemBiblioteca.java
-    Livro.java
-    Revista.java
-    Usuario.java
-    Emprestimo.java
-    StatusEmprestimo.java
-    ItemIndisponivelException.java
-
-  servico/
-    Biblioteca.java
-    RepositorioBiblioteca.java
-    RepositorioBibliotecaMemoria.java
-    RepositorioBibliotecaSQLite.java
-    ConexaoSQLite.java
-
-  interfacegrafica/
-    MainGUI.java
+javac --release 17 -encoding UTF-8 -cp "lib\sqlite-jdbc-3.54.1.0.jar" -d bin $arquivos
 ```
 
-| Pacote | Responsabilidade |
-|---|---|
-| `modelo` | Contém as entidades do sistema e suas validações, como `ItemBiblioteca`, `Livro`, `Revista`, `Usuario` e `Emprestimo`. |
-| `servico` | Contém as regras de negócio, a interface `RepositorioBiblioteca`, suas implementações em memória e SQLite e o gerenciamento das conexões com o banco. |
-| `interfacegrafica` | Contém a interface Swing, responsável pela interação com o usuário, cadastros, consultas e apresentação dos resultados. |
+Execute a aplicação:
 
-### Organização arquitetural
+``` powershell
+java -cp "bin;lib\sqlite-jdbc-3.54.1.0.jar" interfacegrafica.MainGUI
+```
 
-O sistema utiliza uma separação de responsabilidades inspirada na **Clean Architecture** e nos princípios **SOLID**.
+### Linux / macOS --- Terminal
 
-A classe `Biblioteca` depende da interface `RepositorioBiblioteca`, permitindo utilizar diferentes implementações de armazenamento sem alterar as regras de negócio.
+Crie a pasta de saída e compile:
 
-Atualmente, estão disponíveis duas implementações:
+``` bash
+mkdir -p bin
 
-- **`RepositorioBibliotecaMemoria`:** armazena os dados temporariamente durante a execução, sendo útil para testes.
-- **`RepositorioBibliotecaSQLite`:** utiliza o SQLite para armazenar os dados permanentemente.
+javac --release 17 -encoding UTF-8 \
+  -cp "lib/sqlite-jdbc-3.54.1.0.jar" \
+  -d bin \
+  $(find src -name "*.java")
+```
 
-A classe `ConexaoSQLite` centraliza a abertura das conexões com o banco de dados e a ativação das chaves estrangeiras.
+Execute a aplicação:
 
-Essa organização aplica o princípio de **Inversão de Dependência (DIP)**, reduzindo o acoplamento entre as regras de negócio e a tecnologia de persistência.
+``` bash
+java -cp "bin:lib/sqlite-jdbc-3.54.1.0.jar" interfacegrafica.MainGUI
+```
 
+### Execução pela IDE
+
+-   **IntelliJ IDEA:** abra a pasta do projeto, confirme que `src` está
+    marcada como diretório de fontes e adicione
+    `lib/sqlite-jdbc-3.54.1.0.jar` às bibliotecas do módulo. Execute
+    `interfacegrafica.MainGUI`.
+-   **Visual Studio Code:** instale o Extension Pack for Java, abra a
+    pasta raiz e confirme que `lib/sqlite-jdbc-3.54.1.0.jar` está no
+    classpath do projeto. Execute `interfacegrafica.MainGUI`.
+-   **Eclipse / NetBeans:** configure `src` como diretório de fontes,
+    adicione o JAR SQLite ao classpath e execute
+    `interfacegrafica.MainGUI`.
+
+## Banco de dados SQLite
+
+### Inicialização automática
+
+O método `main()` de `MainGUI` chama
+`InicializadorBancoSQLite.inicializar()` antes de abrir a janela
+principal.
+
+A classe `InicializadorBancoSQLite`:
+
+1.  Abre ou cria o banco por meio de `ConexaoSQLite`.
+2.  Procura o script `sql/schema.sql` relativo à pasta de execução.
+3.  Caso não encontre o arquivo nesse caminho, tenta carregá-lo como
+    recurso `/sql/schema.sql`.
+4.  Executa as instruções do script.
+5.  Verifica a existência das tabelas `itens`, `usuarios` e
+    `emprestimos`.
+
+O script utiliza `CREATE TABLE IF NOT EXISTS`, para que a inicialização
+não recrie tabelas que já existem.
+
+O arquivo `biblioteca.db` é criado no diretório de trabalho da
+aplicação. Por isso, execute o programa a partir da pasta raiz do
+projeto para que o caminho `sql/schema.sql` seja encontrado
+corretamente.
+
+**Atenção:** não exclua `biblioteca.db` se quiser preservar os cadastros
+e o histórico. Para começar com um banco vazio, feche a aplicação e faça
+uma cópia de segurança antes de remover o arquivo.
+
+### Tabelas
+
+  -----------------------------------------------------------------------
+  Tabela                              Finalidade
+  ----------------------------------- -----------------------------------
+  `itens`                             Armazena livros e revistas,
+                                      incluindo código, título, tipo e
+                                      disponibilidade.
+
+  `usuarios`                          Armazena os usuários cadastrados.
+
+  `emprestimos`                       Armazena os empréstimos, os
+                                      usuários e itens relacionados,
+                                      datas e situação.
+  -----------------------------------------------------------------------
+
+A implementação SQLite utiliza JDBC, `PreparedStatement`, fechamento de
+recursos com `try-with-resources` e transações nas operações que
+precisam manter mais de uma alteração consistente.
+
+A classe `ConexaoSQLite` centraliza a abertura das conexões e ativa
+`PRAGMA foreign_keys = ON`.
+
+## Estrutura do projeto
+
+``` text
+TrabalhoPOO/
+├── src/
+│   ├── modelo/
+│   │   ├── Emprestimo.java
+│   │   ├── ItemBiblioteca.java
+│   │   ├── ItemIndisponivelException.java
+│   │   ├── Livro.java
+│   │   ├── Revista.java
+│   │   ├── StatusEmprestimo.java
+│   │   └── Usuario.java
+│   ├── servico/
+│   │   ├── Biblioteca.java
+│   │   ├── ConexaoSQLite.java
+│   │   ├── InicializadorBancoSQLite.java
+│   │   ├── RepositorioBiblioteca.java
+│   │   ├── RepositorioBibliotecaMemoria.java
+│   │   └── RepositorioBibliotecaSQLite.java
+│   └── interfacegrafica/
+│       ├── BotaoArredondado.java
+│       └── MainGUI.java
+├── sql/
+│   └── schema.sql
+├── lib/
+│   └── sqlite-jdbc-3.54.1.0.jar
+├── docs/
+│   └── javadoc/
+├── .vscode/
+├── README.md
+└── TrabalhoPOO.iml
+```
 
 ## Classes principais
 
-`ItemBiblioteca`: classe abstrata com código, título e disponibilidade.\
-`Livro`: item com autor e ISBN.\
-`Revista`: item com número da edição.\
-`Usuario`: pessoa cadastrada na biblioteca.\
-`Emprestimo`: liga um item a um usuário, com data do empréstimo, prazo, data da devolução e status.\
-`StatusEmprestimo`: enum com os estados do empréstimo (`ATIVO`, `DEVOLVIDO`, `EXPIRADO`).\
-`ItemIndisponivelException`: exceção própria, lançada ao tentar emprestar um item que já está emprestado.\
-`Biblioteca`: guarda as listas e aplica as regras de negócio.\
-`MainGUI`: interface gráfica em Swing.
+  -----------------------------------------------------------------------
+  Classe                              Responsabilidade
+  ----------------------------------- -----------------------------------
+  `ItemBiblioteca`                    Classe abstrata que representa um
+                                      item do acervo.
 
-## Interface gráfica
+  `Livro`                             Representa um livro, com autor e
+                                      ISBN.
 
-A janela (`MainGUI`, que estende `JFrame`) tem três abas (`JTabbedPane`). Em cada aba há um formulário em cima e, embaixo, a lista do que está cadastrado:
+  `Revista`                           Representa uma revista, com número
+                                      de edição.
 
-| Aba | Campos | Botões | Lista |
-|---|---|---|---|
-| Itens | Código, Título, Autor, ISBN, Edição | Cadastrar livro, Cadastrar revista | Livros e revistas, com a situação (disponível ou emprestado) |
-| Usuários | ID, Nome, E-mail | Cadastrar usuário | Usuários cadastrados |
-| Empréstimos | Código do item, ID do usuário | Fazer empréstimo, Fazer devolução | Empréstimos com data, prazo, status e data da devolução |
+  `Usuario`                           Representa um usuário cadastrado.
 
-Como funciona:
-Cada botão tem um `ActionListener`, escrito como classe anônima, que chama um método da tela, por exemplo `cadastrarLivro()`.
-Cada método lê os campos, cria o objeto do `modelo` e chama a `Biblioteca`. Se der certo, mostra uma mensagem, limpa os campos e atualiza as listas (`atualizarListas()`).
-Se algum dado for inválido, a classe do `modelo` ou a `Biblioteca` lança uma exceção, e a tela mostra a mensagem num `JOptionPane`. A `ItemIndisponivelException` aparece num aviso próprio, "Item indisponível".
-Campos numéricos (ID e edição) são convertidos com `Integer.parseInt` no método `lerInteiro()`, que avisa quando o texto não é um número.
-Ao fazer um empréstimo, a mensagem de confirmação mostra a data do empréstimo e o prazo de devolução.
+  `Emprestimo`                        Relaciona item e usuário e controla
+                                      datas e situação do empréstimo.
+
+  `StatusEmprestimo`                  Enumeração dos estados `ATIVO`,
+                                      `DEVOLVIDO` e `EXPIRADO`.
+
+  `ItemIndisponivelException`         Exceção própria para tentativas de
+                                      empréstimo de item indisponível.
+
+  `Biblioteca`                        Serviço que aplica as regras de
+                                      negócio e utiliza o repositório.
+
+  `RepositorioBiblioteca`             Interface que define as operações
+                                      de armazenamento.
+
+  `RepositorioBibliotecaMemoria`      Implementação em memória do
+                                      repositório.
+
+  `RepositorioBibliotecaSQLite`       Implementação persistente do
+                                      repositório usando SQLite.
+
+  `ConexaoSQLite`                     Centraliza a abertura de conexões
+                                      com o banco.
+
+  `InicializadorBancoSQLite`          Inicializa e verifica a estrutura
+                                      do banco.
+
+  `MainGUI`                           Janela principal e interface Swing
+                                      da aplicação.
+
+  `BotaoArredondado`                  Componente Swing personalizado para
+                                      botões.
+  -----------------------------------------------------------------------
 
 ## Regras de negócio
 
-O código do item é único no acervo e só aceita números.\
-O título não pode ser vazio (aceita números, como "1984").\
-O autor só aceita letras e espaços.\
-O ISBN do livro tem exatamente 13 dígitos.\
-O número da edição da revista deve ser maior que zero.\
-O ID do usuário é único e deve ser maior que zero, o nome não pode ser vazio e o e-mail deve conter "@gmail.com".\
-Só é possível emprestar um item existente, para um usuário cadastrado, e que esteja disponível.\
-O prazo de cada empréstimo é de 2 dias. Ao vencer, o empréstimo passa a `EXPIRADO` e o item volta a ficar disponível automaticamente.\
-A devolução é feita pelo código do item, exige um empréstimo ativo e registra a data da devolução.\
-O histórico de empréstimos é mantido, inclusive dos devolvidos ou expirados.
+### Itens
 
-## Checklist de conceitos
-|Conceito | Onde foi utilizado |
-|---|---|
-| Classes e objetos | `Livro`, `Revista`, `Usuario`, `Emprestimo` e `Biblioteca` são instanciados na `MainGUI` e dentro de `Biblioteca`. |
-| Atributos de classe | Cada classe guarda o estado relevante ao seu papel, como `codigo`, `titulo` e `disponivel` em `ItemBiblioteca`, `autor` e `isbn` em `Livro`, e `dataEmprestimo`, `dataDevolucao` e `status` em `Emprestimo`. |
-| Métodos de classe | Cada comportamento fica na classe responsável: `emprestar()` e `devolver()` em `ItemBiblioteca` e `Emprestimo`, e `adicionarItem()`, `emprestar()` e `devolver()` em `Biblioteca`. |
-| Construtores | `Livro`, `Revista`, `Usuario` e `Emprestimo` exigem todos os dados obrigatórios na criação e validam esses dados, o que impede objetos incompletos ou inválidos. |
-| Palavra `this` | Usada nos construtores e setters para diferenciar o atributo do parâmetro, como em `this.codigo = codigo`. |
-| Modificadores | Atributos `private`, métodos de uso externo `public`, construtor de `ItemBiblioteca` `protected` e métodos de validação `private static`. |
-| Encapsulamento | O estado só muda por métodos controlados: a disponibilidade do item por `emprestar()` e `devolver()`, os dados pelos setters que validam, e as listas por `adicionarItem()` e `adicionarUsuario()`. Os getters da `Biblioteca` devolvem cópias das listas. |
-| Pacotes Java / API | Código separado por responsabilidade em `modelo`, `servico` e `interfacegrafica`. Da API do Java são usados `java.util` (`List`, `ArrayList`), `java.time` (`LocalDateTime`), `javax.swing` e `java.awt`. |
-| Herança | `Livro` e `Revista` estendem `ItemBiblioteca`; `MainGUI` estende `JFrame`; `ItemIndisponivelException` estende `RuntimeException`. |
-| Polimorfismo | `Biblioteca` guarda uma `List<ItemBiblioteca>` com livros e revistas e chama `getTipo()` e `toString()` sem conhecer o tipo concreto. |
-| Palavra `super` | Os construtores de `Livro` e `Revista` chamam `super(codigo, titulo)`, e o `toString()` deles reaproveita `super.toString()`. A exceção própria chama `super(mensagem)`. |
-| Abstração | `ItemBiblioteca` é abstrata e declara `getTipo()`, então não pode ser instanciada diretamente. |
-| Interfaces | **Interfaces:** o projeto utiliza `RepositorioBiblioteca`, uma interface que define as operações de armazenamento. Ela possui duas implementações: `RepositorioBibliotecaMemoria` e `RepositorioBibliotecaSQLite`, demonstrando abstração e inversão de dependência (DIP).|
-| Enum | `StatusEmprestimo` (`ATIVO`, `DEVOLVIDO`, `EXPIRADO`) guarda a situação de cada `Emprestimo`, no lugar de um `boolean`. |
-| Tratamento de exceções | As classes do `modelo` e a `Biblioteca` lançam `IllegalArgumentException` para dados inválidos e a exceção própria `ItemIndisponivelException` para item já emprestado. A `MainGUI` trata tudo com `try/catch` e mostra a mensagem na tela. |
-| Interface gráfica | Feita em Swing (`MainGUI`), com abas, formulários, botões, listas e caixas de mensagem (`JOptionPane`). |
-| Data e hora | `Emprestimo` usa `LocalDateTime` para registrar o empréstimo e a devolução, `ChronoUnit` para calcular o prazo de 2 dias e `DateTimeFormatter` para exibir as datas no formato `dd/MM/yyyy HH:mm`. |
+-   O código do item é obrigatório, numérico e único.
+-   O título não pode ser vazio.
+-   Livros possuem autor e ISBN.
+-   O ISBN deve possuir 13 dígitos.
+-   Revistas possuem número de edição maior que zero.
+-   Na edição, o código e o tipo do item não podem ser alterados.
+
+### Usuários
+
+-   O ID deve ser um número inteiro maior que zero e único.
+-   O nome não pode ser vazio.
+-   A validação atual exige que o e-mail contenha `@gmail.com`.
+
+### Empréstimos e devoluções
+
+-   Só é possível emprestar um item cadastrado e disponível.
+-   O usuário precisa estar cadastrado.
+-   Um item emprestado não pode ser emprestado novamente.
+-   O prazo de devolução é de dois dias.
+-   O sistema controla os estados `ATIVO`, `DEVOLVIDO` e `EXPIRADO`.
+-   Quando o prazo vence, o empréstimo passa para `EXPIRADO` e o item
+    volta a ficar disponível, conforme a lógica implementada no serviço.
+-   A devolução registra a data e hora e exige um empréstimo ativo.
+-   O histórico dos empréstimos é preservado.
+
+### Exclusões
+
+-   Um item emprestado não pode ser excluído.
+-   Itens e usuários relacionados a empréstimos no histórico não podem
+    ser excluídos.
+-   A interface solicita confirmação antes de executar exclusões.
+
+## Interface gráfica
+
+A aplicação possui três abas principais:
+
+### Itens
+
+Permite cadastrar, consultar, editar e excluir livros e revistas. A
+tabela apresenta código, título, tipo e disponibilidade.
+
+### Usuários
+
+Permite cadastrar, consultar, editar e excluir usuários. A tabela
+apresenta ID, nome e e-mail.
+
+### Empréstimos
+
+Permite registrar empréstimos e devoluções. A tabela apresenta item,
+usuário, data do empréstimo, prazo de devolução, data de devolução e
+situação.
+
+### Temas
+
+A aplicação possui modo claro e modo escuro, alternados pelo botão no
+canto superior direito. A interface utiliza uma paleta de cores para
+manter a consistência dos componentes nos dois temas.
+
 ## SOLID aplicado
 
-- **SRP:** `Biblioteca` concentra as regras de negócio; `RepositorioBibliotecaMemoria` cuida do armazenamento; `MainGUI` cuida da interação com o usuário.
-- **OCP:** o serviço trabalha com a interface `RepositorioBiblioteca`, permitindo outra implementação sem alterar as regras.
-- **LSP:** `Livro` e `Revista` continuam substituíveis por `ItemBiblioteca`.
-- **ISP:** a interface de armazenamento contém somente as operações necessárias para o serviço.
-- **DIP:** `Biblioteca` recebe `RepositorioBiblioteca` pelo construtor, em vez de criar ou conhecer diretamente a implementação concreta.
+  -----------------------------------------------------------------------
+  Princípio                           Aplicação no projeto
+  ----------------------------------- -----------------------------------
+  **SRP --- Responsabilidade Única**  `MainGUI` cuida da apresentação,
+                                      `Biblioteca` das regras de negócio
+                                      e `RepositorioBibliotecaSQLite` da
+                                      persistência.
 
-## Clean Code aplicado
+  **OCP --- Aberto/Fechado**          `Biblioteca` utiliza a interface
+                                      `RepositorioBiblioteca`, permitindo
+                                      diferentes implementações de
+                                      armazenamento.
 
-- nomes de classes, métodos e variáveis expressivos;
-- métodos menores e com uma responsabilidade;
-- validações preservadas nas entidades;
-- tratamento de erros centralizado nos fluxos da interface;
-- `StringBuilder` para montar listagens;
-- execução da interface pela `SwingUtilities.invokeLater`;
-- reutilização de métodos auxiliares para campos, botões, limpeza e operações;
-- cópias das listas retornadas pelo repositório para evitar exposição do estado interno.
+  **LSP --- Substituição de Liskov**  `Livro` e `Revista` são
+                                      especializações de `ItemBiblioteca`
+                                      e podem ser tratados por meio do
+                                      tipo abstrato.
 
-## Funcionalidades preservadas
+  **ISP --- Segregação de             O serviço depende do contrato de
+  Interfaces**                        repositório que reúne as operações
+                                      de armazenamento de que necessita.
 
-- cadastro de livros, revistas e usuários;
-- listagem do acervo e dos usuários;
-- empréstimo e devolução;
-- histórico de empréstimos durante a execução;
-- validação dos dados e mensagens de erro.
+  **DIP --- Inversão de Dependência** `Biblioteca` recebe
+                                      `RepositorioBiblioteca` pelo
+                                      construtor, em vez de depender
+                                      diretamente de uma implementação
+                                      concreta.
+  -----------------------------------------------------------------------
 
-## Persistência de dados
+Exemplo de DIP:
 
-O Sistema Biblioteca utiliza SQLite para manter os registros de livros, revistas, usuários e empréstimos entre as execuções da aplicação.
+``` java
+public class Biblioteca {
+    private final RepositorioBiblioteca repositorio;
 
-Os dados são armazenados localmente no arquivo `biblioteca.db`, que não é versionado no GitHub. A estrutura do banco está disponível no arquivo `sql/schema.sql`, permitindo a criação das tabelas em outros ambientes.
+    public Biblioteca(RepositorioBiblioteca repositorio) {
+        this.repositorio = repositorio;
+    }
+}
+```
 
-A implementação `RepositorioBibliotecaMemoria` foi preservada como alternativa para testes sem persistência.
+## Clean Architecture
+
+O projeto utiliza uma organização inspirada na Clean Architecture,
+separando modelo, serviço, interface gráfica e persistência.
+
+-   **Modelo (`modelo`):** contém entidades e conceitos do domínio.
+-   **Serviço (`servico`):** contém as regras de negócio, a abstração do
+    repositório e suas implementações.
+-   **Interface gráfica (`interfacegrafica`):** apresenta os dados e
+    recebe as interações do usuário.
+
+A classe `Biblioteca` depende da abstração `RepositorioBiblioteca`, e
+não diretamente do SQLite. As implementações em memória e SQLite podem
+ser utilizadas por meio desse contrato.
+
+As implementações de repositório estão no mesmo pacote `servico`;
+portanto, a separação é principalmente por responsabilidade e
+dependência, não por uma divisão física completa em camadas
+independentes.
+
+## Clean Code
+
+O projeto utiliza práticas voltadas à legibilidade e manutenção, como:
+
+-   nomes expressivos para classes, métodos e variáveis;
+-   separação entre modelo, regras de negócio, interface e persistência;
+-   métodos auxiliares para operações repetidas;
+-   validações nas entidades e nos serviços;
+-   tratamento de exceções;
+-   `try-with-resources` para recursos JDBC;
+-   `SwingUtilities.invokeLater` para iniciar a interface;
+-   `SwingWorker` para operações demoradas sem bloquear a interface.
+
+## Checklist de conceitos do Trabalho 1
+
+  -----------------------------------------------------------------------
+  Conceito                            Aplicação
+  ----------------------------------- -----------------------------------
+  Classes e objetos                   `Livro`, `Revista`, `Usuario`,
+                                      `Emprestimo` e `Biblioteca`.
+
+  Atributos e métodos                 Estado e comportamentos definidos
+                                      nas classes do modelo e serviço.
+
+  Construtores                        Construtores das entidades recebem
+                                      os dados necessários para sua
+                                      criação.
+
+  `this`                              Referencia atributos e construtores
+                                      da própria classe.
+
+  Modificadores de acesso             Uso de `private`, `public` e
+                                      `protected` para controlar o
+                                      acesso.
+
+  Encapsulamento                      Atributos privados e operações que
+                                      controlam alterações no estado.
+
+  Pacotes                             Organização em `modelo`, `servico`
+                                      e `interfacegrafica`.
+
+  Herança                             `Livro` e `Revista` estendem
+                                      `ItemBiblioteca`.
+
+  Polimorfismo                        Livros e revistas são tratados por
+                                      referências do tipo
+                                      `ItemBiblioteca`.
+
+  `super`                             Utilizado pelas subclasses para
+                                      chamar construtores e
+                                      comportamentos da classe base.
+
+  Abstração                           `ItemBiblioteca` é uma classe
+                                      abstrata.
+
+  Interfaces                          `RepositorioBiblioteca` possui
+                                      implementações em memória e SQLite.
+
+  Enumerações                         `StatusEmprestimo` representa os
+                                      estados do empréstimo.
+
+  Exceções                            Uso de exceções padrão e
+                                      `ItemIndisponivelException`.
+
+  Interface gráfica                   Aplicação construída com Java
+                                      Swing.
+
+  Data e hora                         Uso de `LocalDateTime`,
+                                      `ChronoUnit` e `DateTimeFormatter`.
+  -----------------------------------------------------------------------
+
+## JavaDoc
+
+A documentação HTML gerada está em:
+
+``` text
+docs/javadoc/
+```
+
+Abra `docs/javadoc/index.html` para consultar a documentação.
+
+Para gerar novamente a documentação, execute na pasta raiz:
+
+**Windows --- PowerShell:**
+
+``` powershell
+javadoc -encoding UTF-8 -charset UTF-8 -docencoding UTF-8 -cp "lib\sqlite-jdbc-3.54.1.0.jar" -d "docs\javadoc" -sourcepath src -subpackages modelo:servico:interfacegrafica
+```
+
+**Linux / macOS:**
+
+``` bash
+javadoc -encoding UTF-8 -charset UTF-8 -docencoding UTF-8 \
+  -cp "lib/sqlite-jdbc-3.54.1.0.jar" \
+  -d "docs/javadoc" \
+  -sourcepath src \
+  -subpackages modelo:servico:interfacegrafica
+```
+
+## Verificação técnica
+
+Na cópia do projeto utilizada para preparar este README:
+
+-   a compilação foi concluída com sucesso usando `javac --release 17`;
+-   a geração do JavaDoc foi concluída e produziu `index.html`;
+-   os comandos de compilação foram conferidos em ambiente Linux com JDK
+    21, limitando a compilação à API e à sintaxe do Java 17.
+
+A abertura da janela Swing e os comandos no PowerShell do Windows devem
+ser conferidos em um computador com ambiente gráfico e JDK instalado
+antes da entrega final.
+
+------------------------------------------------------------------------
+
+**Sistema Biblioteca --- Trabalho 2 de Programação Orientada a
+Objetos.**
