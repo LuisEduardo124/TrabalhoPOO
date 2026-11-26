@@ -246,7 +246,11 @@ TrabalhoPOO/
 
 -   O ID deve ser um número inteiro maior que zero e único.
 -   O nome não pode ser vazio.
--   A validação atual exige que o e-mail contenha `@gmail.com`.
+-   O e-mail deve ter um formato válido; são aceitos endereços de diferentes
+    provedores, como Gmail, Hotmail e Outlook.
+-   Domínios de exemplo/reservados e `teste.com` são rejeitados. Isso não
+    confirma que a caixa postal existe; para comprovar isso seria necessário
+    enviar um código ou link de confirmação por e-mail.
 
 ### Empréstimos e devoluções
 

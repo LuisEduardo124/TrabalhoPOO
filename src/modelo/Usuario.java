@@ -1,10 +1,21 @@
 package modelo;
 
+import java.util.Locale;
+import java.util.Set;
+import java.util.regex.Pattern;
+
 /**
  * Representa um usuário da biblioteca, com identificador fixo,
  * nome e e-mail.
  */
 public class Usuario {
+    private static final Set<String> DOMINIOS_PLACEHOLDER = Set.of(
+            "teste.com", "test.com", "example.com", "example.net", "example.org");
+    private static final Pattern PADRAO_EMAIL = Pattern.compile(
+            "^[A-Za-z0-9!#$%&'*+/=?^_`{|}~-]+(?:\\.[A-Za-z0-9!#$%&'*+/=?^_`{|}~-]+)*"
+                    + "@(?:[A-Za-z0-9](?:[A-Za-z0-9-]{0,61}[A-Za-z0-9])?\\.)+"
+                    + "[A-Za-z0-9](?:[A-Za-z0-9-]{0,61}[A-Za-z0-9])?$");
+
     private final int id;
     private String nome;
     private String email;
@@ -14,10 +25,10 @@ public class Usuario {
      *
      * @param id identificador do usuário, maior que zero
      * @param nome nome do usuário
-     * @param email endereço de e-mail que deve conter {@code @gmail.com}
+     * @param email endereço de e-mail válido
      * @throws IllegalArgumentException se o ID for menor ou igual a zero,
      *         se o nome for nulo ou estiver em branco, ou se o e-mail for
-     *         nulo ou não contiver {@code @gmail.com}
+     *         inválido
      */
     public Usuario(int id, String nome, String email) {
         if (id <= 0) {
@@ -72,8 +83,7 @@ public class Usuario {
      * Altera o e-mail do usuário.
      *
      * @param email novo endereço de e-mail
-     * @throws IllegalArgumentException se o e-mail for nulo
-     *         ou não contiver {@code @gmail.com}
+     * @throws IllegalArgumentException se o e-mail for inválido
      */
     public void setEmail(String email) {
         validarEmail(email);
@@ -93,15 +103,28 @@ public class Usuario {
     }
 
     /**
-     * Garante que o e-mail contenha {@code @gmail.com}.
+     * Garante que o e-mail tenha um formato válido e não use um domínio de exemplo.
      *
      * @param email endereço de e-mail informado
-     * @throws IllegalArgumentException se o e-mail for nulo
-     *         ou não contiver {@code @gmail.com}
+     * @throws IllegalArgumentException se o e-mail for nulo ou inválido
      */
     private static void validarEmail(String email) {
-        if (email == null || !email.contains("@gmail.com")) {
-            throw new IllegalArgumentException("O e-mail deve conter \"@gmail.com\".");
+        if (email == null || email.length() > 254) {
+            throw new IllegalArgumentException("Informe um e-mail válido (ex.: nome@provedor.com).");
+        }
+
+        int separador = email.indexOf('@');
+        if (separador > 64 || !PADRAO_EMAIL.matcher(email).matches()) {
+            throw new IllegalArgumentException("Informe um e-mail válido (ex.: nome@provedor.com).");
+        }
+
+        String dominio = email.substring(separador + 1).toLowerCase(Locale.ROOT);
+        boolean dominioPlaceholder = DOMINIOS_PLACEHOLDER.stream()
+                .anyMatch(reservado -> dominio.equals(reservado) || dominio.endsWith("." + reservado));
+        if (dominioPlaceholder || dominio.endsWith(".test") || dominio.endsWith(".example")
+                || dominio.endsWith(".invalid") || dominio.endsWith(".localhost")) {
+            throw new IllegalArgumentException(
+                    "O domínio do e-mail é reservado ou usado como exemplo. Informe um domínio real.");
         }
     }
 
