@@ -397,5 +397,96 @@ public class RepositorioBibliotecaSQLite implements RepositorioBiblioteca {
             );
         }
     }
+        @Override
+    public void atualizarItem(ItemBiblioteca item) {
+        String sql = """
+                UPDATE itens
+                SET titulo = ?, autor = ?, isbn = ?, edicao = ?
+                WHERE codigo = ?
+                """;
+
+        try (Connection conexao = ConexaoSQLite.abrir();
+             PreparedStatement comando = conexao.prepareStatement(sql)) {
+
+            comando.setString(1, item.getTitulo());
+
+            if (item instanceof Livro livro) {
+                comando.setString(2, livro.getAutor());
+                comando.setString(3, livro.getIsbn());
+                comando.setNull(4, java.sql.Types.INTEGER);
+            } else if (item instanceof Revista revista) {
+                comando.setNull(2, java.sql.Types.VARCHAR);
+                comando.setNull(3, java.sql.Types.VARCHAR);
+                comando.setInt(4, revista.getNumeroEdicao());
+            } else {
+                throw new IllegalArgumentException("Tipo de item não suportado.");
+            }
+
+            comando.setString(5, item.getCodigo());
+
+            if (comando.executeUpdate() != 1) {
+                throw new IllegalStateException("Item não encontrado no banco.");
+            }
+
+        } catch (SQLException erro) {
+            throw new IllegalStateException("Erro ao atualizar item no SQLite.", erro);
+        }
+    }
+
+    @Override
+    public void excluirItem(String codigo) {
+        String sql = "DELETE FROM itens WHERE codigo = ?";
+
+        try (Connection conexao = ConexaoSQLite.abrir();
+             PreparedStatement comando = conexao.prepareStatement(sql)) {
+
+            comando.setString(1, codigo);
+
+            if (comando.executeUpdate() != 1) {
+                throw new IllegalStateException("Item não encontrado no banco.");
+            }
+
+        } catch (SQLException erro) {
+            throw new IllegalStateException("Erro ao excluir item no SQLite.", erro);
+        }
+    }
+
+    @Override
+    public void atualizarUsuario(Usuario usuario) {
+        String sql = "UPDATE usuarios SET nome = ?, email = ? WHERE id = ?";
+
+        try (Connection conexao = ConexaoSQLite.abrir();
+             PreparedStatement comando = conexao.prepareStatement(sql)) {
+
+            comando.setString(1, usuario.getNome());
+            comando.setString(2, usuario.getEmail());
+            comando.setInt(3, usuario.getId());
+
+            if (comando.executeUpdate() != 1) {
+                throw new IllegalStateException("Usuário não encontrado no banco.");
+            }
+
+        } catch (SQLException erro) {
+            throw new IllegalStateException("Erro ao atualizar usuário no SQLite.", erro);
+        }
+    }
+
+    @Override
+    public void excluirUsuario(int id) {
+        String sql = "DELETE FROM usuarios WHERE id = ?";
+
+        try (Connection conexao = ConexaoSQLite.abrir();
+             PreparedStatement comando = conexao.prepareStatement(sql)) {
+
+            comando.setInt(1, id);
+
+            if (comando.executeUpdate() != 1) {
+                throw new IllegalStateException("Usuário não encontrado no banco.");
+            }
+
+        } catch (SQLException erro) {
+            throw new IllegalStateException("Erro ao excluir usuário no SQLite.", erro);
+        }
+    }
 
 }

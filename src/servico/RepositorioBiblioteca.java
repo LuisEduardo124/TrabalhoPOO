@@ -77,4 +77,33 @@ public interface RepositorioBiblioteca {
      * @param emprestimo empréstimo com os dados atualizados
      */
     void atualizarEmprestimo(Emprestimo emprestimo);
+
+        /**
+     * Grava os dados alterados de um item já armazenado (título, autor, ISBN ou edição).
+     * A disponibilidade do item não é alterada por este método.
+     *
+     * @param item item com os dados novos, identificado pelo código
+     */
+    void atualizarItem(ItemBiblioteca item);
+
+    /**
+     * Remove um item do acervo.
+     *
+     * @param codigo código do item a remover
+     */
+    void excluirItem(String codigo);
+
+    /**
+     * Grava os dados alterados de um usuário já armazenado (nome ou e-mail).
+     *
+     * @param usuario usuário com os dados novos, identificado pelo ID
+     */
+    void atualizarUsuario(Usuario usuario);
+
+    /**
+     * Remove um usuário da biblioteca.
+     *
+     * @param id identificador do usuário a remover
+     */
+    void excluirUsuario(int id);
 }

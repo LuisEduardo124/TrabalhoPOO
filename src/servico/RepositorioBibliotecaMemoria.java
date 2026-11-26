@@ -94,4 +94,23 @@ public class RepositorioBibliotecaMemoria implements RepositorioBiblioteca {
     public void atualizarEmprestimo(Emprestimo emprestimo) {
         // Não precisa atualizar a lista: o objeto já foi modificado.
     }
+        @Override
+    public void atualizarItem(ItemBiblioteca item) {
+        // Não precisa atualizar a lista: o objeto já foi modificado.
+    }
+
+    @Override
+    public void excluirItem(String codigo) {
+        itens.removeIf(item -> item.getCodigo().equals(codigo));
+    }
+
+    @Override
+    public void atualizarUsuario(Usuario usuario) {
+        // Não precisa atualizar a lista: o objeto já foi modificado.
+    }
+
+    @Override
+    public void excluirUsuario(int id) {
+        usuarios.removeIf(usuario -> usuario.getId() == id);
+    }
 }

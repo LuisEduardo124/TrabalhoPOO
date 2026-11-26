@@ -1,9 +1,15 @@
 package interfacegrafica;
 
 import java.awt.*;
-
+import java.awt.event.FocusAdapter;
+import java.awt.event.FocusEvent;
 import java.awt.event.KeyEvent;
+import java.time.format.DateTimeFormatter;
+import java.util.ArrayList;
+import java.util.Collections;
+import java.util.HashMap;
 import java.util.List;
+import java.util.Map;
 import java.util.concurrent.Callable;
 import java.util.concurrent.ExecutionException;
 import java.util.function.Supplier;
@@ -11,32 +17,30 @@ import java.util.logging.Level;
 import java.util.logging.Logger;
 
 import javax.swing.AbstractAction;
-
-
+import javax.swing.BorderFactory;
 import javax.swing.JButton;
 import javax.swing.JComboBox;
+import javax.swing.JComponent;
 import javax.swing.JFrame;
 import javax.swing.JLabel;
 import javax.swing.JOptionPane;
 import javax.swing.JPanel;
 import javax.swing.JScrollPane;
 import javax.swing.JTabbedPane;
-import javax.swing.JTextArea;
-import javax.swing.JTextField;
-import javax.swing.SwingUtilities;
-import javax.swing.JComponent;
 import javax.swing.JTable;
-import javax.swing.table.DefaultTableModel;
-import javax.swing.UIManager;
-import javax.swing.BorderFactory;
-import javax.swing.border.Border;
-import javax.swing.border.AbstractBorder;
+import javax.swing.JTextField;
 import javax.swing.KeyStroke;
+import javax.swing.ListSelectionModel;
+import javax.swing.SwingUtilities;
 import javax.swing.SwingWorker;
+import javax.swing.UIManager;
+import javax.swing.border.AbstractBorder;
+import javax.swing.border.Border;
+import javax.swing.plaf.basic.BasicComboBoxUI;
+import javax.swing.table.DefaultTableModel;
 
 import modelo.Emprestimo;
 import modelo.ItemBiblioteca;
-import modelo.ItemIndisponivelException;
 import modelo.Livro;
 import modelo.Revista;
 import modelo.Usuario;
@@ -46,59 +50,71 @@ import servico.RepositorioBibliotecaSQLite;
 
 /**
  * Janela principal da biblioteca, feita em Swing.
- * Organiza os cadastros e empréstimos em abas e exibe os resultados das operações.
+ * Organiza itens, usuários e empréstimos em abas. Cada aba tem um formulário e uma tabela:
+ * ao selecionar uma linha da tabela, o formulário passa a editar aquele registro.
  */
 public class MainGUI extends JFrame {
-    /** Serviço de regras de negócio usado pela janela. */
-    private final Biblioteca biblioteca;
     private static final Logger LOGGER = Logger.getLogger(MainGUI.class.getName());
     private static final Color COR_DESTAQUE = new Color(55, 145, 115);
+    private static final DateTimeFormatter FORMATO_DATA = DateTimeFormatter.ofPattern("dd/MM/yyyy HH:mm");
+    private static final String FONTE = "Segoe UI";
+
+    /** Serviço de regras de negócio usado pela janela. */
+    private final Biblioteca biblioteca;
+
     private boolean modoEscuro = false;
+    private Color corFundo = new Color(248, 248, 246);
+    private Color corCampo = Color.WHITE;
     private JTabbedPane abas;
-        /** Botões que disparam operações; ficam desabilitados enquanto algo roda em segundo plano. */
-    private final List<JButton> botoesAcao = new java.util.ArrayList<>();
     /** Quantidade de operações em segundo plano ainda em andamento. */
     private int operacoesEmAndamento = 0;
-    private JButton botaoCadastrarItem;
-    private JButton botaoCadastrarUsuario;
-    private JButton botaoEmprestar;
-    private final JButton botaoTema =
-            new BotaoArredondado("☾ Modo escuro");
-    /** Campos do formulário de itens e usuários. */
-    private final JTextField campoCodigo = new JTextField();
-    /** Campo de título. */
-    private final JTextField campoTitulo = new JTextField();
-    /** Campo de autor. */
-    private final JTextField campoAutor = new JTextField();
-    /** Campo de ISBN. */
-    private final JTextField campoIsbn = new JTextField();
-    /** Campo de edição. */
-    private final JTextField campoEdicao = new JTextField();
-    /** Campo de identificador do usuário. */
-    private final JTextField campoIdUsuario = new JTextField();
-    /** Campo de nome do usuário. */
-    private final JTextField campoNome = new JTextField();
-    /** Campo de e-mail do usuário. */
-    private final JTextField campoEmail = new JTextField();
-    /** Campos usados para consultar empréstimos e registrar devoluções. */
-    private final JTextField campoCodigoEmprestimo = new JTextField();
-    /** Campo de identificador do empréstimo. */
-    private final JTextField campoIdEmprestimo = new JTextField();
-    /** Áreas que exibem usuários e empréstimos. */
-    private final JTextArea listaEmprestimos = criarAreaDeLista();
-    /** Área de listagem de usuários. */
-    private final JTextArea listaUsuarios = criarAreaDeLista();
-    /** Modelo não editável da tabela de itens. */
-    private final DefaultTableModel modeloItens = new DefaultTableModel(
-            new String[]{"Código", "Título", "Tipo", "Disponibilidade"}, 0) {
-        @Override
-        public boolean isCellEditable(int linha, int coluna) {
-            return false;
-        }
-    };
 
-    /** Tabela que exibe o acervo cadastrado. */
+    /** Código do item que está sendo editado; {@code null} quando o formulário cadastra um item novo. */
+    private String codigoItemEmEdicao;
+    /** ID do usuário que está sendo editado; {@code null} quando o formulário cadastra um usuário novo. */
+    private Integer idUsuarioEmEdicao;
+    private final Map<String, ItemBiblioteca> itensPorCodigo = new HashMap<>();
+    private final Map<Integer, Usuario> usuariosPorId = new HashMap<>();
+    private List<Emprestimo> emprestimosExibidos = new ArrayList<>();
+
+    private final JButton botaoTema = new BotaoArredondado("☾ Modo escuro");
+    private JButton botaoCadastrarItem;
+    private JButton botaoSalvarItem;
+    private JButton botaoExcluirItem;
+    private JButton botaoLimparItem;
+    private JButton botaoCadastrarUsuario;
+    private JButton botaoSalvarUsuario;
+    private JButton botaoExcluirUsuario;
+    private JButton botaoLimparUsuario;
+    private JButton botaoEmprestar;
+    private JButton botaoDevolver;
+
+    private final JComboBox<String> seletorTipo = new JComboBox<>(new String[]{"Livro", "Revista"});
+    private final JTextField campoCodigo = new JTextField();
+    private final JTextField campoTitulo = new JTextField();
+    private final JTextField campoAutor = new JTextField();
+    private final JTextField campoIsbn = new JTextField();
+    private final JTextField campoEdicao = new JTextField();
+    private JLabel rotuloAutor;
+    private JLabel rotuloIsbn;
+    private JLabel rotuloEdicao;
+
+    private final JTextField campoIdUsuario = new JTextField();
+    private final JTextField campoNome = new JTextField();
+    private final JTextField campoEmail = new JTextField();
+
+    private final JTextField campoCodigoEmprestimo = new JTextField();
+    private final JTextField campoIdEmprestimo = new JTextField();
+
+    private final DefaultTableModel modeloItens =
+            criarModelo("Código", "Título", "Tipo", "Disponibilidade");
     private final JTable tabelaItens = new JTable(modeloItens);
+    private final DefaultTableModel modeloUsuarios =
+            criarModelo("ID", "Nome", "E-mail");
+    private final JTable tabelaUsuarios = new JTable(modeloUsuarios);
+    private final DefaultTableModel modeloEmprestimos =
+            criarModelo("Item", "Usuário", "Empréstimo", "Devolver até", "Devolvido em", "Situação");
+    private final JTable tabelaEmprestimos = new JTable(modeloEmprestimos);
 
     /**
      * Monta as abas de itens, usuários e empréstimos e carrega as listas iniciais.
@@ -108,41 +124,199 @@ public class MainGUI extends JFrame {
     public MainGUI(Biblioteca biblioteca) {
         this.biblioteca = biblioteca;
         configurarJanela();
+
         abas = new JTabbedPane();
+        abas.setFont(new Font(FONTE, Font.PLAIN, 14));
         abas.addTab("Itens", criarPainelItens());
         abas.addTab("Usuários", criarPainelUsuarios());
         abas.addTab("Empréstimos", criarPainelEmprestimos());
+
         JPanel cabecalho = new JPanel(new FlowLayout(FlowLayout.RIGHT, 12, 8));
         cabecalho.add(botaoTema);
-
-            botaoTema.setMnemonic(KeyEvent.VK_T);
+        botaoTema.setMnemonic(KeyEvent.VK_T);
         botaoTema.addActionListener(e -> alternarTema());
-        configurarAtalhos();
 
         add(cabecalho, BorderLayout.NORTH);
-        abas.setFont(new Font("Segoe UI", Font.PLAIN, 14));
-
-        tabelaItens.setFont(new Font("Segoe UI", Font.PLAIN, 13));
-        tabelaItens.setRowHeight(30);
-        tabelaItens.setShowVerticalLines(false);
-        tabelaItens.setShowHorizontalLines(false);
-        tabelaItens.setFillsViewportHeight(true);
-
-        tabelaItens.getTableHeader().setFont(
-                new Font("Segoe UI", Font.BOLD, 13)
-        );
-        tabelaItens.getTableHeader().setPreferredSize(
-                new Dimension(0, 36)
-        );
         add(abas, BorderLayout.CENTER);
 
+        configurarTabela(tabelaItens, 100, 380, 100, 150);
+        configurarTabela(tabelaUsuarios, 70, 300, 400);
+        configurarTabela(tabelaEmprestimos, 190, 140, 130, 130, 130, 80);
+        configurarSelecoes();
+        configurarAtalhos();
+        estilizarSeletor();
+
         aplicarTema();
-        atualizarBotaoPadrao();
+        seletorTipo.setPreferredSize(new Dimension(10, campoCodigo.getPreferredSize().height));
+        atualizarEstadoBotoes();
         atualizarListas();
     }
-    private void alternarTema() {
-        modoEscuro = !modoEscuro;
-        aplicarTema();
+
+    // ------------------------------------------------------------------ montagem das telas
+
+    private void configurarJanela() {
+        setTitle("Biblioteca - Sistema de Gestão de Acervo");
+        setSize(960, 720);
+        setMinimumSize(new Dimension(800, 600));
+        setLocationRelativeTo(null);
+        setDefaultCloseOperation(JFrame.EXIT_ON_CLOSE);
+
+        UIManager.put("Label.font", new Font(FONTE, Font.PLAIN, 14));
+        UIManager.put("Button.font", new Font(FONTE, Font.PLAIN, 14));
+        UIManager.put("Button.disabledText", new Color(235, 240, 238));
+    }
+
+    private JPanel criarPainelItens() {
+        Formulario formulario = new Formulario();
+        formulario.adicionarCampo("Tipo de item:", seletorTipo);
+        formulario.adicionarCampo("Código:", campoCodigo);
+        formulario.adicionarCampo("Título:", campoTitulo);
+        rotuloAutor = formulario.adicionarCampo("Autor:", campoAutor);
+        rotuloIsbn = formulario.adicionarCampo("ISBN:", campoIsbn);
+        rotuloEdicao = formulario.adicionarCampo("Edição:", campoEdicao);
+        seletorTipo.addActionListener(e -> mostrarCamposDoTipo());
+        mostrarCamposDoTipo();
+
+        botaoCadastrarItem = criarBotao("Cadastrar", KeyEvent.VK_C, e -> cadastrarItem());
+        botaoSalvarItem = criarBotao("Salvar alterações", KeyEvent.VK_S, e -> salvarItem());
+        botaoExcluirItem = criarBotao("Excluir", KeyEvent.VK_X, e -> excluirItem());
+        botaoLimparItem = criarBotao("Limpar", KeyEvent.VK_L, e -> limparFormularioItem());
+        formulario.adicionarAcoes(botaoCadastrarItem, botaoSalvarItem, botaoExcluirItem, botaoLimparItem);
+
+        return montarPainel(formulario, tabelaItens);
+    }
+
+    private JPanel criarPainelUsuarios() {
+        Formulario formulario = new Formulario();
+        formulario.adicionarCampo("ID:", campoIdUsuario);
+        formulario.adicionarCampo("Nome:", campoNome);
+        formulario.adicionarCampo("E-mail:", campoEmail);
+
+        botaoCadastrarUsuario = criarBotao("Cadastrar", KeyEvent.VK_U, e -> cadastrarUsuario());
+        botaoSalvarUsuario = criarBotao("Salvar alterações", KeyEvent.VK_S, e -> salvarUsuario());
+        botaoExcluirUsuario = criarBotao("Excluir", KeyEvent.VK_X, e -> excluirUsuario());
+        botaoLimparUsuario = criarBotao("Limpar", KeyEvent.VK_L, e -> limparFormularioUsuario());
+        formulario.adicionarAcoes(botaoCadastrarUsuario, botaoSalvarUsuario, botaoExcluirUsuario, botaoLimparUsuario);
+
+        return montarPainel(formulario, tabelaUsuarios);
+    }
+
+    private JPanel criarPainelEmprestimos() {
+        Formulario formulario = new Formulario();
+        formulario.adicionarCampo("Código do item:", campoCodigoEmprestimo);
+        formulario.adicionarCampo("ID do usuário:", campoIdEmprestimo);
+
+        botaoEmprestar = criarBotao("Emprestar", KeyEvent.VK_E, e -> fazerEmprestimo());
+        botaoDevolver = criarBotao("Devolver", KeyEvent.VK_D, e -> fazerDevolucao());
+        formulario.adicionarAcoes(botaoEmprestar, botaoDevolver);
+
+        return montarPainel(formulario, tabelaEmprestimos);
+    }
+
+    private JPanel montarPainel(JPanel formulario, JTable tabela) {
+        JPanel painel = new JPanel(new BorderLayout(12, 12));
+        painel.setBorder(BorderFactory.createEmptyBorder(12, 14, 14, 14));
+        painel.add(formulario, BorderLayout.NORTH);
+        painel.add(new JScrollPane(tabela), BorderLayout.CENTER);
+        return painel;
+    }
+
+    private JButton criarBotao(String texto, int mnemonico, java.awt.event.ActionListener acao) {
+        JButton botao = new BotaoArredondado(texto);
+        botao.setMnemonic(mnemonico);
+        botao.addActionListener(acao);
+        botao.setPreferredSize(new Dimension(150, 36));
+        return botao;
+    }
+
+    private static DefaultTableModel criarModelo(String... colunas) {
+        return new DefaultTableModel(colunas, 0) {
+            @Override
+            public boolean isCellEditable(int linha, int coluna) {
+                return false;
+            }
+        };
+    }
+
+    /**
+     * Aplica o visual padrão às tabelas.
+     *
+     * @param tabela tabela a configurar
+     * @param larguras largura preferida de cada coluna, na ordem; a tabela as ajusta ao espaço disponível
+     */
+    private void configurarTabela(JTable tabela, int... larguras) {
+        for (int i = 0; i < larguras.length; i++) {
+            tabela.getColumnModel().getColumn(i).setPreferredWidth(larguras[i]);
+        }
+        tabela.setFont(new Font(FONTE, Font.PLAIN, 13));
+        tabela.setRowHeight(30);
+        tabela.setShowVerticalLines(false);
+        tabela.setShowHorizontalLines(false);
+        tabela.setFillsViewportHeight(true);
+        tabela.setSelectionMode(ListSelectionModel.SINGLE_SELECTION);
+        tabela.getTableHeader().setReorderingAllowed(false);
+        tabela.getTableHeader().setFont(new Font(FONTE, Font.BOLD, 13));
+        tabela.getTableHeader().setPreferredSize(new Dimension(0, 36));
+
+        // Por padrão o Tab fica preso dentro da tabela; aqui ele passa o foco para o próximo componente.
+        tabela.getActionMap().put("selectNextColumnCell", new AbstractAction() {
+            @Override
+            public void actionPerformed(java.awt.event.ActionEvent evento) {
+                KeyboardFocusManager.getCurrentKeyboardFocusManager().focusNextComponent(tabela);
+            }
+        });
+        tabela.getActionMap().put("selectPreviousColumnCell", new AbstractAction() {
+            @Override
+            public void actionPerformed(java.awt.event.ActionEvent evento) {
+                KeyboardFocusManager.getCurrentKeyboardFocusManager().focusPreviousComponent(tabela);
+            }
+        });
+    }
+
+    /** Liga cada tabela ao seu formulário: selecionar uma linha carrega o registro para edição. */
+    private void configurarSelecoes() {
+        tabelaItens.getSelectionModel().addListSelectionListener(evento -> {
+            if (evento.getValueIsAdjusting()) {
+                return;
+            }
+            int linha = tabelaItens.getSelectedRow();
+            if (linha >= 0) {
+                ItemBiblioteca item = itensPorCodigo.get(String.valueOf(modeloItens.getValueAt(linha, 0)));
+                if (item != null) {
+                    entrarEdicaoItem(item);
+                }
+            } else if (codigoItemEmEdicao != null) {
+                limparFormularioItem();
+            }
+        });
+
+        tabelaUsuarios.getSelectionModel().addListSelectionListener(evento -> {
+            if (evento.getValueIsAdjusting()) {
+                return;
+            }
+            int linha = tabelaUsuarios.getSelectedRow();
+            if (linha >= 0) {
+                int id = Integer.parseInt(String.valueOf(modeloUsuarios.getValueAt(linha, 0)));
+                Usuario usuario = usuariosPorId.get(id);
+                if (usuario != null) {
+                    entrarEdicaoUsuario(usuario);
+                }
+            } else if (idUsuarioEmEdicao != null) {
+                limparFormularioUsuario();
+            }
+        });
+
+        tabelaEmprestimos.getSelectionModel().addListSelectionListener(evento -> {
+            if (evento.getValueIsAdjusting()) {
+                return;
+            }
+            int linha = tabelaEmprestimos.getSelectedRow();
+            if (linha >= 0 && linha < emprestimosExibidos.size()) {
+                Emprestimo emprestimo = emprestimosExibidos.get(linha);
+                campoCodigoEmprestimo.setText(emprestimo.getItem().getCodigo());
+                campoIdEmprestimo.setText(String.valueOf(emprestimo.getUsuario().getId()));
+            }
+        });
     }
 
     /** Registra atalhos globais: Ctrl+T alterna o tema e a troca de aba atualiza o botão do Enter. */
@@ -158,301 +332,133 @@ public class MainGUI extends JFrame {
         abas.addChangeListener(evento -> atualizarBotaoPadrao());
     }
 
-    /** Faz a tecla Enter acionar o botão principal da aba que está aberta. */
+    // ------------------------------------------------------------------ estado do formulário
+
+    private boolean livroSelecionado() {
+        return "Livro".equals(seletorTipo.getSelectedItem());
+    }
+
+    /** Mostra Autor e ISBN para livros e Edição para revistas. */
+    private void mostrarCamposDoTipo() {
+        boolean livro = livroSelecionado();
+        rotuloAutor.setVisible(livro);
+        campoAutor.setVisible(livro);
+        rotuloIsbn.setVisible(livro);
+        campoIsbn.setVisible(livro);
+        rotuloEdicao.setVisible(!livro);
+        campoEdicao.setVisible(!livro);
+        getContentPane().revalidate();
+        getContentPane().repaint();
+    }
+
+    private void entrarEdicaoItem(ItemBiblioteca item) {
+        codigoItemEmEdicao = item.getCodigo();
+        seletorTipo.setSelectedItem(item.getTipo());
+        campoCodigo.setText(item.getCodigo());
+        campoTitulo.setText(item.getTitulo());
+        campoAutor.setText("");
+        campoIsbn.setText("");
+        campoEdicao.setText("");
+        if (item instanceof Livro livro) {
+            campoAutor.setText(livro.getAutor());
+            campoIsbn.setText(livro.getIsbn());
+        } else if (item instanceof Revista revista) {
+            campoEdicao.setText(String.valueOf(revista.getNumeroEdicao()));
+        }
+        definirEditavel(campoCodigo, false);
+        seletorTipo.setEnabled(false);
+        atualizarEstadoBotoes();
+    }
+
+    private void limparFormularioItem() {
+        codigoItemEmEdicao = null;
+        campoCodigo.setText("");
+        campoTitulo.setText("");
+        campoAutor.setText("");
+        campoIsbn.setText("");
+        campoEdicao.setText("");
+        definirEditavel(campoCodigo, true);
+        seletorTipo.setEnabled(true);
+        tabelaItens.clearSelection();
+        atualizarEstadoBotoes();
+    }
+
+    private void entrarEdicaoUsuario(Usuario usuario) {
+        idUsuarioEmEdicao = usuario.getId();
+        campoIdUsuario.setText(String.valueOf(usuario.getId()));
+        campoNome.setText(usuario.getNome());
+        campoEmail.setText(usuario.getEmail());
+        definirEditavel(campoIdUsuario, false);
+        atualizarEstadoBotoes();
+    }
+
+    private void limparFormularioUsuario() {
+        idUsuarioEmEdicao = null;
+        campoIdUsuario.setText("");
+        campoNome.setText("");
+        campoEmail.setText("");
+        definirEditavel(campoIdUsuario, true);
+        tabelaUsuarios.clearSelection();
+        atualizarEstadoBotoes();
+    }
+
+    private void limparFormularioEmprestimo() {
+        campoCodigoEmprestimo.setText("");
+        campoIdEmprestimo.setText("");
+        tabelaEmprestimos.clearSelection();
+    }
+
+    /** Campos bloqueados (como o código de um item em edição) ficam com o fundo da janela. */
+    private void definirEditavel(JTextField campo, boolean editavel) {
+        campo.setEditable(editavel);
+        campo.setBackground(editavel ? corCampo : corFundo);
+    }
+
+    /**
+     * Habilita cada botão conforme o momento: tudo fica bloqueado enquanto há operação em andamento,
+     * Cadastrar só vale para registro novo e Salvar e Excluir só valem com um registro selecionado.
+     */
+    private void atualizarEstadoBotoes() {
+        boolean livre = operacoesEmAndamento == 0;
+        boolean editandoItem = codigoItemEmEdicao != null;
+        boolean editandoUsuario = idUsuarioEmEdicao != null;
+
+        botaoCadastrarItem.setEnabled(livre && !editandoItem);
+        botaoSalvarItem.setEnabled(livre && editandoItem);
+        botaoExcluirItem.setEnabled(livre && editandoItem);
+        botaoLimparItem.setEnabled(livre);
+
+        botaoCadastrarUsuario.setEnabled(livre && !editandoUsuario);
+        botaoSalvarUsuario.setEnabled(livre && editandoUsuario);
+        botaoExcluirUsuario.setEnabled(livre && editandoUsuario);
+        botaoLimparUsuario.setEnabled(livre);
+
+        botaoEmprestar.setEnabled(livre);
+        botaoDevolver.setEnabled(livre);
+        atualizarBotaoPadrao();
+    }
+
+    /** Faz a tecla Enter acionar o botão principal da aba aberta (Salvar quando há registro em edição). */
     private void atualizarBotaoPadrao() {
         JButton padrao = switch (abas.getSelectedIndex()) {
-            case 0 -> botaoCadastrarItem;
-            case 1 -> botaoCadastrarUsuario;
+            case 0 -> codigoItemEmEdicao != null ? botaoSalvarItem : botaoCadastrarItem;
+            case 1 -> idUsuarioEmEdicao != null ? botaoSalvarUsuario : botaoCadastrarUsuario;
             default -> botaoEmprestar;
         };
         getRootPane().setDefaultButton(padrao);
     }
 
-    private Border criarBordaArredondada() {
-        return new AbstractBorder() {
-            @Override
-            public void paintBorder(
-                    Component c, Graphics g,
-                    int x, int y, int width, int height) {
+    // ------------------------------------------------------------------ operações de negócio
 
-                Graphics2D g2 = (Graphics2D) g.create();
-
-                g2.setRenderingHint(
-                        RenderingHints.KEY_ANTIALIASING,
-                        RenderingHints.VALUE_ANTIALIAS_ON
-                );
-
-                boolean comFoco = c.hasFocus();
-                g2.setColor(comFoco ? COR_DESTAQUE : modoEscuro
-                        ? new Color(90, 96, 102)
-                        : new Color(195, 200, 198));
-                g2.setStroke(new BasicStroke(comFoco ? 2.5f : 1f));
-
-                g2.drawRoundRect(
-                        x + 1, y + 1, width - 3, height - 3,
-                        16, 16
-                );
-
-                g2.dispose();
-            }
-
-            @Override
-            public Insets getBorderInsets(Component c) {
-                return new Insets(7, 12, 7, 12);
-            }
-
-            @Override
-            public Insets getBorderInsets(Component c, Insets insets) {
-                insets.set(7, 12, 7, 12);
-                return insets;
-            }
-        };
-    }
-
-    private JButton criarBotaoArredondado(JButton botao) {
-        botao.setContentAreaFilled(false);
-        botao.setFocusPainted(false);
-        botao.setBorderPainted(false);
-        botao.setOpaque(false);
-
-        botao.setBorder(
-                BorderFactory.createEmptyBorder(9, 18, 9, 18)
-        );
-
-        return botao;
-    }
-
-    private void aplicarTema() {
-        Color fundo = modoEscuro
-                ? new Color(35, 38, 42)
-                : new Color(248, 248, 246);
-
-        Color campo = modoEscuro
-                ? new Color(50, 54, 59)
-                : Color.WHITE;
-
-        Color texto = modoEscuro
-                ? new Color(235, 235, 235)
-                : new Color(35, 35, 35);
-
-        aplicarCores(getContentPane(), fundo, campo, texto);
-
-        botaoTema.setText(modoEscuro ? "☀ Modo claro" : "☾ Modo escuro");
-        Color fundoAbas = modoEscuro
-                ? new Color(43, 47, 51)
-                : new Color(244, 246, 245);
-
-        Color textoAbas = modoEscuro
-                ? Color.WHITE
-                : new Color(35, 35, 35);
-
-        abas.setBackground(fundoAbas);
-        abas.setForeground(textoAbas);
-
-        for (int i = 0; i < abas.getTabCount(); i++) {
-            abas.setBackgroundAt(i, fundoAbas);
-            abas.setForegroundAt(i, textoAbas);
-        }
-        repaint();
-    }
-
-    private void aplicarCores(
-            Component componente,
-            Color fundo,
-            Color campo,
-            Color texto) {
-
-        if (componente instanceof JTextField
-                || componente instanceof JTextArea
-                || componente instanceof JComboBox) {
-
-            if (componente instanceof JTextField campoTexto) {
-                campoTexto.setCaretColor(texto);
-                campoTexto.setBorder(criarBordaArredondada());
-            }
-
-            componente.setBackground(campo);
-            componente.setForeground(texto);
-        } else if (componente instanceof JTable tabela) {
-
-            tabela.setBackground(campo);
-            tabela.setForeground(texto);
-
-            tabela.setGridColor(
-                    modoEscuro
-                            ? new Color(65, 70, 75)
-                            : new Color(225, 228, 230)
-            );
-
-            tabela.setSelectionBackground(
-                    modoEscuro
-                            ? new Color(48, 105, 91)
-                            : new Color(214, 235, 227)
-            );
-
-            tabela.setSelectionForeground(
-                    modoEscuro ? Color.WHITE : new Color(35, 55, 47)
-            );
-
-            tabela.getTableHeader().setBackground(
-                    modoEscuro
-                            ? new Color(43, 47, 51)
-                            : new Color(244, 246, 245)
-            );
-
-            tabela.getTableHeader().setForeground(texto);
-
-            tabela.getTableHeader().setBorder(
-                    BorderFactory.createMatteBorder(
-                            0, 0, 1, 0,
-                            modoEscuro
-                                    ? new Color(75, 80, 85)
-                                    : new Color(215, 220, 218)
-                    )
-            );
-
-        } else if (componente instanceof JButton botao) {
-
-            botao.setBackground(new Color(55, 145, 115));
-            botao.setForeground(Color.WHITE);
-
-            if (!(botao instanceof BotaoArredondado)) {
-                botao.setOpaque(true);
-            }
-
+    private void cadastrarItem() {
+        if (livroSelecionado()) {
+            cadastrarLivro();
         } else {
-            componente.setBackground(fundo);
-            componente.setForeground(texto);
-        }
-
-        if (componente instanceof Container container) {
-            for (Component filho : container.getComponents()) {
-                aplicarCores(filho, fundo, campo, texto);
-            }
+            cadastrarRevista();
         }
     }
 
-    private void configurarJanela() {
-        setTitle("Biblioteca - Sistema de Gestão de Acervo");
-        setSize(960, 720);
-        setMinimumSize(new Dimension(800, 600));
-        setLocationRelativeTo(null);
-        setDefaultCloseOperation(JFrame.EXIT_ON_CLOSE);
-
-        UIManager.put("Label.font", new Font("Segoe UI", Font.PLAIN, 14));
-        UIManager.put("Button.font", new Font("Segoe UI", Font.PLAIN, 14));
-        UIManager.put("Button.disabledText", new Color(235, 240, 238));
-    }
-
-    private JPanel criarPainelItens() {
-        JPanel formulario = new JPanel(new BorderLayout(0, 8));
-
-        JComboBox<String> seletorTipo = new JComboBox<>(new String[]{"Livro", "Revista"});
-
-        JPanel camposComuns = new JPanel(new GridLayout(0, 2, 8, 8));
-        camposComuns.add(new JLabel("Tipo de item:"));
-        camposComuns.add(seletorTipo);
-        adicionarCampo(camposComuns, "Código:", campoCodigo);
-        adicionarCampo(camposComuns, "Título:", campoTitulo);
-
-        JPanel camposLivro = new JPanel(new GridLayout(0, 2, 8, 8));
-        adicionarCampo(camposLivro, "Autor:", campoAutor);
-        adicionarCampo(camposLivro, "ISBN:", campoIsbn);
-
-        JPanel camposRevista = new JPanel(new GridLayout(0, 2, 8, 8));
-        adicionarCampo(camposRevista, "Edição:", campoEdicao);
-
-        CardLayout layoutTipo = new CardLayout();
-        JPanel camposPorTipo = new JPanel(layoutTipo);
-        camposPorTipo.add(camposLivro, "Livro");
-        camposPorTipo.add(camposRevista, "Revista");
-
-        seletorTipo.addActionListener(event -> {
-            String tipo = (String) seletorTipo.getSelectedItem();
-            layoutTipo.show(camposPorTipo, tipo);
-        });
-
-                botaoCadastrarItem = criarBotao("Cadastrar", KeyEvent.VK_C, event -> {
-            if ("Livro".equals(seletorTipo.getSelectedItem())) {
-                cadastrarLivro();
-            } else {
-                cadastrarRevista();
-            }
-        });
-
-        JPanel acoes = new JPanel(new BorderLayout());
-        acoes.add(botaoCadastrarItem, BorderLayout.LINE_END);
-
-        formulario.add(camposComuns, BorderLayout.NORTH);
-        formulario.add(camposPorTipo, BorderLayout.CENTER);
-        formulario.add(acoes, BorderLayout.SOUTH);
-
-        return montarPainel(formulario, tabelaItens);
-    }
-
-    private JPanel criarPainelUsuarios() {
-        JPanel formulario = new JPanel(new GridLayout(0, 2, 8, 8));
-        adicionarCampo(formulario, "ID:", campoIdUsuario);
-        adicionarCampo(formulario, "Nome:", campoNome);
-        adicionarCampo(formulario, "E-mail:", campoEmail);
-        formulario.add(new JLabel());
-        botaoCadastrarUsuario = criarBotao("Cadastrar usuário", KeyEvent.VK_U, event -> cadastrarUsuario());
-        formulario.add(botaoCadastrarUsuario);
-        return montarPainel(formulario, listaUsuarios);
-    }
-
-    private JPanel criarPainelEmprestimos() {
-        JPanel formulario = new JPanel(new GridLayout(0, 2, 8, 8));
-        adicionarCampo(formulario, "Código do item:", campoCodigoEmprestimo);
-        adicionarCampo(formulario, "ID do usuário:", campoIdEmprestimo);
-        botaoEmprestar = criarBotao("Fazer empréstimo", KeyEvent.VK_E, event -> fazerEmprestimo());
-        formulario.add(botaoEmprestar);
-        formulario.add(criarBotao("Fazer devolução", KeyEvent.VK_D, event -> fazerDevolucao()));
-        return montarPainel(formulario, listaEmprestimos);
-    }
-
-        private JButton criarBotao(String texto, int mnemonico, java.awt.event.ActionListener acao) {
-        JButton botao = new BotaoArredondado(texto);
-        botao.setMnemonic(mnemonico);
-        botao.addActionListener(acao);
-        botao.setPreferredSize(new Dimension(140, 36));
-        botoesAcao.add(botao);
-        return botao;
-    }
-
-    private void adicionarCampo(JPanel formulario, String rotulo, JTextField campo) {
-        JLabel legenda = new JLabel(rotulo);
-        legenda.setLabelFor(campo);
-        formulario.add(legenda);
-        formulario.add(campo);
-        campo.addFocusListener(new java.awt.event.FocusAdapter() {
-            @Override
-            public void focusGained(java.awt.event.FocusEvent evento) {
-                campo.repaint();
-            }
-
-            @Override
-            public void focusLost(java.awt.event.FocusEvent evento) {
-                campo.repaint();
-            }
-        });
-    }
-
-    private JPanel montarPainel(JPanel formulario, JComponent lista) {
-        JPanel painel = new JPanel(new BorderLayout(12, 12));
-        painel.setBorder(BorderFactory.createEmptyBorder(12, 14, 14, 14));
-
-        formulario.setBorder(
-                BorderFactory.createEmptyBorder(10, 8, 14, 8)
-        );
-
-        painel.add(formulario, BorderLayout.NORTH);
-        painel.add(new JScrollPane(lista), BorderLayout.CENTER);
-
-        return painel;
-    }
-
-        private void cadastrarLivro() {
+    private void cadastrarLivro() {
         executar(() -> {
             Livro livro = new Livro(campoCodigo.getText().trim(), campoTitulo.getText().trim(),
                     campoAutor.getText().trim(), campoIsbn.getText().trim());
@@ -460,7 +466,7 @@ public class MainGUI extends JFrame {
                 biblioteca.adicionarItem(livro);
                 return "Livro salvo.";
             };
-        }, this::limparCamposItem);
+        }, this::limparFormularioItem);
     }
 
     private void cadastrarRevista() {
@@ -471,7 +477,41 @@ public class MainGUI extends JFrame {
                 biblioteca.adicionarItem(revista);
                 return "Revista salva.";
             };
-        }, this::limparCamposItem);
+        }, this::limparFormularioItem);
+    }
+
+    private void salvarItem() {
+        String codigo = codigoItemEmEdicao;
+        if (codigo == null) {
+            return;
+        }
+        executar(() -> {
+            String titulo = campoTitulo.getText().trim();
+            if (livroSelecionado()) {
+                String autor = campoAutor.getText().trim();
+                String isbn = campoIsbn.getText().trim();
+                return () -> {
+                    biblioteca.editarLivro(codigo, titulo, autor, isbn);
+                    return "Livro atualizado.";
+                };
+            }
+            int edicao = lerInteiro(campoEdicao.getText(), "Edição");
+            return () -> {
+                biblioteca.editarRevista(codigo, titulo, edicao);
+                return "Revista atualizada.";
+            };
+        }, this::limparFormularioItem);
+    }
+
+    private void excluirItem() {
+        String codigo = codigoItemEmEdicao;
+        if (codigo == null || !confirmar("Excluir o item " + codigo + "?\nEsta ação não pode ser desfeita.")) {
+            return;
+        }
+        executar(() -> () -> {
+            biblioteca.excluirItem(codigo);
+            return "Item excluído.";
+        }, this::limparFormularioItem);
     }
 
     private void cadastrarUsuario() {
@@ -482,7 +522,33 @@ public class MainGUI extends JFrame {
                 biblioteca.adicionarUsuario(usuario);
                 return "Usuário salvo.";
             };
-        }, this::limparCamposUsuario);
+        }, this::limparFormularioUsuario);
+    }
+
+    private void salvarUsuario() {
+        Integer id = idUsuarioEmEdicao;
+        if (id == null) {
+            return;
+        }
+        executar(() -> {
+            String nome = campoNome.getText().trim();
+            String email = campoEmail.getText().trim();
+            return () -> {
+                biblioteca.editarUsuario(id, nome, email);
+                return "Usuário atualizado.";
+            };
+        }, this::limparFormularioUsuario);
+    }
+
+    private void excluirUsuario() {
+        Integer id = idUsuarioEmEdicao;
+        if (id == null || !confirmar("Excluir o usuário " + id + "?\nEsta ação não pode ser desfeita.")) {
+            return;
+        }
+        executar(() -> () -> {
+            biblioteca.excluirUsuario(id);
+            return "Usuário excluído.";
+        }, this::limparFormularioUsuario);
     }
 
     private void fazerEmprestimo() {
@@ -494,7 +560,7 @@ public class MainGUI extends JFrame {
                 return "Empréstimo feito em " + emprestimo.getDataEmprestimoFormatada()
                         + ".\nDevolver até " + emprestimo.getDataLimiteFormatada() + ".";
             };
-        }, this::limparCamposEmprestimo);
+        }, this::limparFormularioEmprestimo);
     }
 
     private void fazerDevolucao() {
@@ -504,7 +570,13 @@ public class MainGUI extends JFrame {
                 biblioteca.devolver(codigo);
                 return "Devolução feita.";
             };
-        }, this::limparCamposEmprestimo);
+        }, this::limparFormularioEmprestimo);
+    }
+
+    private boolean confirmar(String mensagem) {
+        int resposta = JOptionPane.showConfirmDialog(this, mensagem, "Confirmar exclusão",
+                JOptionPane.YES_NO_OPTION, JOptionPane.WARNING_MESSAGE);
+        return resposta == JOptionPane.YES_OPTION;
     }
 
     /**
@@ -576,7 +648,7 @@ public class MainGUI extends JFrame {
         boolean livre = operacoesEmAndamento == 0;
         Component foco = KeyboardFocusManager.getCurrentKeyboardFocusManager().getFocusOwner();
         setCursor(Cursor.getPredefinedCursor(livre ? Cursor.DEFAULT_CURSOR : Cursor.WAIT_CURSOR));
-        botoesAcao.forEach(botao -> botao.setEnabled(livre));
+        atualizarEstadoBotoes();
         if (livre && foco != null) {
             foco.requestFocusInWindow();
         }
@@ -611,8 +683,10 @@ public class MainGUI extends JFrame {
     }
 
     private void exibir(DadosTela dados) {
+        itensPorCodigo.clear();
         modeloItens.setRowCount(0);
         for (ItemBiblioteca item : dados.itens()) {
+            itensPorCodigo.put(item.getCodigo(), item);
             modeloItens.addRow(new Object[]{
                     item.getCodigo(),
                     item.getTitulo(),
@@ -620,16 +694,35 @@ public class MainGUI extends JFrame {
                     item.isDisponivel() ? "Disponível" : "Emprestado"
             });
         }
-        listaUsuarios.setText(formatarLista(dados.usuarios(), "Nenhum usuário cadastrado."));
-        listaEmprestimos.setText(formatarLista(dados.emprestimos(), "Nenhum empréstimo realizado."));
+
+        usuariosPorId.clear();
+        modeloUsuarios.setRowCount(0);
+        for (Usuario usuario : dados.usuarios()) {
+            usuariosPorId.put(usuario.getId(), usuario);
+            modeloUsuarios.addRow(new Object[]{usuario.getId(), usuario.getNome(), usuario.getEmail()});
+        }
+
+        emprestimosExibidos = new ArrayList<>(dados.emprestimos());
+        Collections.reverse(emprestimosExibidos);
+        modeloEmprestimos.setRowCount(0);
+        for (Emprestimo emprestimo : emprestimosExibidos) {
+            modeloEmprestimos.addRow(new Object[]{
+                    emprestimo.getItem().getCodigo() + " - " + emprestimo.getItem().getTitulo(),
+                    emprestimo.getUsuario().getId() + " - " + emprestimo.getUsuario().getNome(),
+                    emprestimo.getDataEmprestimoFormatada(),
+                    emprestimo.getDataLimiteFormatada(),
+                    emprestimo.getDataDevolucao() == null ? "-" : emprestimo.getDataDevolucao().format(FORMATO_DATA),
+                    descreverSituacao(emprestimo)
+            });
+        }
     }
 
-    private String formatarLista(Iterable<?> objetos, String mensagemVazia) {
-        StringBuilder texto = new StringBuilder();
-        for (Object objeto : objetos) {
-            texto.append(objeto).append(System.lineSeparator());
-        }
-        return texto.length() == 0 ? mensagemVazia : texto.toString();
+    private String descreverSituacao(Emprestimo emprestimo) {
+        return switch (emprestimo.getStatusAtual()) {
+            case ATIVO -> "Ativo";
+            case DEVOLVIDO -> "Devolvido";
+            case EXPIRADO -> "Expirado";
+        };
     }
 
     private int lerInteiro(String texto, String nomeCampo) {
@@ -640,25 +733,6 @@ public class MainGUI extends JFrame {
         }
     }
 
-    private void limparCamposItem() {
-        campoCodigo.setText("");
-        campoTitulo.setText("");
-        campoAutor.setText("");
-        campoIsbn.setText("");
-        campoEdicao.setText("");
-    }
-
-    private void limparCamposUsuario() {
-        campoIdUsuario.setText("");
-        campoNome.setText("");
-        campoEmail.setText("");
-    }
-
-    private void limparCamposEmprestimo() {
-        campoCodigoEmprestimo.setText("");
-        campoIdEmprestimo.setText("");
-    }
-
     private void mostrarErro(String mensagem) {
         JOptionPane.showMessageDialog(this, mensagem, "Erro", JOptionPane.ERROR_MESSAGE);
     }
@@ -667,17 +741,146 @@ public class MainGUI extends JFrame {
         JOptionPane.showMessageDialog(this, mensagem, "Biblioteca", JOptionPane.INFORMATION_MESSAGE);
     }
 
-    private static JTextArea criarAreaDeLista() {
-        JTextArea area = new JTextArea();
-        area.setEditable(false);
-        area.setLineWrap(true);
-        area.setWrapStyleWord(true);
-        return area;
+    // ------------------------------------------------------------------ aparência
+
+    private void alternarTema() {
+        modoEscuro = !modoEscuro;
+        aplicarTema();
+    }
+
+    /** Troca o botão de seta do seletor por um mais simples, combinando com os campos arredondados. */
+    private void estilizarSeletor() {
+        seletorTipo.setUI(new BasicComboBoxUI() {
+            @Override
+            protected JButton createArrowButton() {
+                JButton seta = new JButton() {
+                    @Override
+                    protected void paintComponent(Graphics g) {
+                        Graphics2D g2 = (Graphics2D) g.create();
+                        g2.setRenderingHint(RenderingHints.KEY_ANTIALIASING, RenderingHints.VALUE_ANTIALIAS_ON);
+                        g2.setColor(getForeground());
+                        int centroX = getWidth() / 2;
+                        int centroY = getHeight() / 2;
+                        g2.fillPolygon(new int[]{centroX - 5, centroX + 5, centroX},
+                                new int[]{centroY - 2, centroY - 2, centroY + 3}, 3);
+                        g2.dispose();
+                    }
+                };
+                seta.setBorder(BorderFactory.createEmptyBorder());
+                seta.setContentAreaFilled(false);
+                seta.setFocusable(false);
+                seta.setPreferredSize(new Dimension(32, 20));
+                return seta;
+            }
+        });
+        seletorTipo.setFont(new Font(FONTE, Font.PLAIN, 14));
+    }
+
+    private Border criarBordaArredondada() {
+        return new AbstractBorder() {
+            @Override
+            public void paintBorder(Component c, Graphics g, int x, int y, int width, int height) {
+                Graphics2D g2 = (Graphics2D) g.create();
+                g2.setRenderingHint(RenderingHints.KEY_ANTIALIASING, RenderingHints.VALUE_ANTIALIAS_ON);
+
+                boolean comFoco = c.hasFocus();
+                g2.setColor(comFoco ? COR_DESTAQUE : modoEscuro
+                        ? new Color(90, 96, 102)
+                        : new Color(195, 200, 198));
+                g2.setStroke(new BasicStroke(comFoco ? 2.5f : 1f));
+                g2.drawRoundRect(x + 1, y + 1, width - 3, height - 3, 16, 16);
+                g2.dispose();
+            }
+
+            @Override
+            public Insets getBorderInsets(Component c) {
+                return new Insets(7, 12, 7, 12);
+            }
+
+            @Override
+            public Insets getBorderInsets(Component c, Insets insets) {
+                insets.set(7, 12, 7, 12);
+                return insets;
+            }
+        };
+    }
+
+    private void aplicarTema() {
+        corFundo = modoEscuro ? new Color(35, 38, 42) : new Color(248, 248, 246);
+        corCampo = modoEscuro ? new Color(50, 54, 59) : Color.WHITE;
+        Color texto = modoEscuro ? new Color(235, 235, 235) : new Color(35, 35, 35);
+        Color fundoAbas = modoEscuro ? new Color(43, 47, 51) : new Color(236, 239, 238);
+
+        // Seletor bloqueado (item em edição) continua legível.
+        UIManager.put("ComboBox.disabledForeground", modoEscuro ? new Color(165, 170, 175) : new Color(105, 110, 108));
+        UIManager.put("ComboBox.disabledBackground", corFundo);
+
+        // A aba selecionada usa a mesma cor do conteúdo, para parecer ligada ao painel.
+        UIManager.put("TabbedPane.selected", corFundo);
+        abas.updateUI();
+
+        aplicarCores(getContentPane(), corFundo, corCampo, texto);
+
+        botaoTema.setText(modoEscuro ? "☀ Modo claro" : "☾ Modo escuro");
+        abas.setBackground(fundoAbas);
+        abas.setForeground(texto);
+        for (int i = 0; i < abas.getTabCount(); i++) {
+            abas.setBackgroundAt(i, fundoAbas);
+            abas.setForegroundAt(i, texto);
+        }
+        repaint();
+    }
+
+    private void aplicarCores(Component componente, Color fundo, Color campo, Color texto) {
+        if (componente instanceof JTextField || componente instanceof JComboBox) {
+            if (componente instanceof JTextField campoTexto) {
+                campoTexto.setCaretColor(texto);
+                campoTexto.setBorder(criarBordaArredondada());
+                campoTexto.setBackground(campoTexto.isEditable() ? campo : fundo);
+            } else {
+                ((JComboBox<?>) componente).setBorder(criarBordaArredondada());
+                componente.setBackground(campo);
+            }
+            componente.setForeground(texto);
+        } else if (componente instanceof JTable tabela) {
+            aplicarCoresTabela(tabela, campo, texto);
+        } else if (componente instanceof JButton botao) {
+            if (botao.getParent() instanceof JComboBox) {
+                botao.setForeground(texto);
+            } else {
+                botao.setBackground(COR_DESTAQUE);
+                botao.setForeground(Color.WHITE);
+                if (!(botao instanceof BotaoArredondado)) {
+                    botao.setOpaque(true);
+                }
+            }
+        } else {
+            componente.setBackground(fundo);
+            componente.setForeground(texto);
+        }
+
+        if (componente instanceof Container container) {
+            for (Component filho : container.getComponents()) {
+                aplicarCores(filho, fundo, campo, texto);
+            }
+        }
+    }
+
+    private void aplicarCoresTabela(JTable tabela, Color campo, Color texto) {
+        tabela.setBackground(campo);
+        tabela.setForeground(texto);
+        tabela.setGridColor(modoEscuro ? new Color(65, 70, 75) : new Color(225, 228, 230));
+        tabela.setSelectionBackground(modoEscuro ? new Color(48, 105, 91) : new Color(214, 235, 227));
+        tabela.setSelectionForeground(modoEscuro ? Color.WHITE : new Color(35, 55, 47));
+        tabela.getTableHeader().setBackground(modoEscuro ? new Color(43, 47, 51) : new Color(244, 246, 245));
+        tabela.getTableHeader().setForeground(texto);
+        tabela.getTableHeader().setBorder(BorderFactory.createMatteBorder(
+                0, 0, 1, 0, modoEscuro ? new Color(75, 80, 85) : new Color(215, 220, 218)));
     }
 
     /**
-     * Inicia a aplicação com um repositório em memória e abre a janela
-     * principal na thread de eventos do Swing.
+     * Inicia a aplicação: cria o banco SQLite se for preciso e abre a janela principal
+     * na thread de eventos do Swing.
      *
      * @param args argumentos da linha de comando, não utilizados
      */
@@ -693,5 +896,69 @@ public class MainGUI extends JFrame {
             Biblioteca biblioteca = new Biblioteca(new RepositorioBibliotecaSQLite());
             new MainGUI(biblioteca).setVisible(true);
         });
+    }
+
+    /**
+     * Painel de formulário com rótulos à esquerda e campos à direita, alinhados em duas colunas,
+     * seguido de uma linha de botões alinhada à direita.
+     */
+    private static final class Formulario extends JPanel {
+        private int linha = 0;
+
+        Formulario() {
+            super(new GridBagLayout());
+            setBorder(BorderFactory.createEmptyBorder(6, 4, 10, 4));
+        }
+
+        JLabel adicionarCampo(String texto, JComponent campo) {
+            JLabel rotulo = new JLabel(texto);
+            rotulo.setLabelFor(campo);
+            rotulo.setPreferredSize(new Dimension(140, rotulo.getPreferredSize().height));
+
+            GridBagConstraints c = new GridBagConstraints();
+            c.gridy = linha++;
+            c.anchor = GridBagConstraints.WEST;
+
+            c.gridx = 0;
+            c.insets = new Insets(4, 0, 4, 12);
+            add(rotulo, c);
+
+            c.gridx = 1;
+            c.weightx = 1;
+            c.fill = GridBagConstraints.HORIZONTAL;
+            c.insets = new Insets(4, 0, 4, 0);
+            add(campo, c);
+
+            if (campo instanceof JTextField campoTexto) {
+                campoTexto.addFocusListener(new FocusAdapter() {
+                    @Override
+                    public void focusGained(FocusEvent evento) {
+                        campoTexto.repaint();
+                    }
+
+                    @Override
+                    public void focusLost(FocusEvent evento) {
+                        campoTexto.repaint();
+                    }
+                });
+            }
+            return rotulo;
+        }
+
+        void adicionarAcoes(JButton... botoes) {
+            JPanel faixa = new JPanel(new FlowLayout(FlowLayout.RIGHT, 8, 0));
+            for (JButton botao : botoes) {
+                faixa.add(botao);
+            }
+
+            GridBagConstraints c = new GridBagConstraints();
+            c.gridy = linha++;
+            c.gridx = 0;
+            c.gridwidth = 2;
+            c.weightx = 1;
+            c.fill = GridBagConstraints.HORIZONTAL;
+            c.insets = new Insets(10, 0, 0, 0);
+            add(faixa, c);
+        }
     }
 }
