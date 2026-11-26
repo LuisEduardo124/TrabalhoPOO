@@ -23,8 +23,10 @@ import javax.swing.JComboBox;
 import javax.swing.JComponent;
 import javax.swing.JFrame;
 import javax.swing.JLabel;
+import javax.swing.JList;
 import javax.swing.JOptionPane;
 import javax.swing.JPanel;
+import javax.swing.JScrollBar;
 import javax.swing.JScrollPane;
 import javax.swing.JTabbedPane;
 import javax.swing.JTable;
@@ -37,6 +39,11 @@ import javax.swing.UIManager;
 import javax.swing.border.AbstractBorder;
 import javax.swing.border.Border;
 import javax.swing.plaf.basic.BasicComboBoxUI;
+import javax.swing.plaf.basic.BasicComboPopup;
+import javax.swing.plaf.basic.BasicGraphicsUtils;
+import javax.swing.plaf.basic.BasicTabbedPaneUI;
+import javax.swing.plaf.basic.BasicScrollBarUI;
+import javax.swing.table.DefaultTableCellRenderer;
 import javax.swing.table.DefaultTableModel;
 
 import modelo.Emprestimo;
@@ -55,7 +62,6 @@ import servico.RepositorioBibliotecaSQLite;
  */
 public class MainGUI extends JFrame {
     private static final Logger LOGGER = Logger.getLogger(MainGUI.class.getName());
-    private static final Color COR_DESTAQUE = new Color(55, 145, 115);
     private static final DateTimeFormatter FORMATO_DATA = DateTimeFormatter.ofPattern("dd/MM/yyyy HH:mm");
     private static final String FONTE = "Segoe UI";
 
@@ -63,8 +69,8 @@ public class MainGUI extends JFrame {
     private final Biblioteca biblioteca;
 
     private boolean modoEscuro = false;
-    private Color corFundo = new Color(248, 248, 246);
-    private Color corCampo = Color.WHITE;
+    /** Cores do tema em uso; trocada por {@link #aplicarTema()}. */
+    private Paleta paleta = Paleta.CLARO;
     private JTabbedPane abas;
     /** Quantidade de operações em segundo plano ainda em andamento. */
     private int operacoesEmAndamento = 0;
@@ -126,6 +132,7 @@ public class MainGUI extends JFrame {
         configurarJanela();
 
         abas = new JTabbedPane();
+        abas.setUI(new AbasUI());
         abas.setFont(new Font(FONTE, Font.PLAIN, 14));
         abas.addTab("Itens", criarPainelItens());
         abas.addTab("Usuários", criarPainelUsuarios());
@@ -163,7 +170,6 @@ public class MainGUI extends JFrame {
 
         UIManager.put("Label.font", new Font(FONTE, Font.PLAIN, 14));
         UIManager.put("Button.font", new Font(FONTE, Font.PLAIN, 14));
-        UIManager.put("Button.disabledText", new Color(235, 240, 238));
     }
 
     private JPanel criarPainelItens() {
@@ -217,7 +223,11 @@ public class MainGUI extends JFrame {
         JPanel painel = new JPanel(new BorderLayout(12, 12));
         painel.setBorder(BorderFactory.createEmptyBorder(12, 14, 14, 14));
         painel.add(formulario, BorderLayout.NORTH);
-        painel.add(new JScrollPane(tabela), BorderLayout.CENTER);
+        JScrollPane rolagem = new JScrollPane(tabela);
+        rolagem.getVerticalScrollBar().setPreferredSize(new Dimension(12, 0));
+        rolagem.getHorizontalScrollBar().setPreferredSize(new Dimension(0, 12));
+        rolagem.getVerticalScrollBar().setUnitIncrement(16);
+        painel.add(rolagem, BorderLayout.CENTER);
         return painel;
     }
 
@@ -252,11 +262,13 @@ public class MainGUI extends JFrame {
         tabela.setRowHeight(30);
         tabela.setShowVerticalLines(false);
         tabela.setShowHorizontalLines(false);
+        tabela.setIntercellSpacing(new Dimension(0, 0));
         tabela.setFillsViewportHeight(true);
         tabela.setSelectionMode(ListSelectionModel.SINGLE_SELECTION);
         tabela.getTableHeader().setReorderingAllowed(false);
-        tabela.getTableHeader().setFont(new Font(FONTE, Font.BOLD, 13));
         tabela.getTableHeader().setPreferredSize(new Dimension(0, 36));
+        tabela.setDefaultRenderer(Object.class, new RenderizadorCelula());
+        tabela.getTableHeader().setDefaultRenderer(new RenderizadorCabecalho());
 
         // Por padrão o Tab fica preso dentro da tabela; aqui ele passa o foco para o próximo componente.
         tabela.getActionMap().put("selectNextColumnCell", new AbstractAction() {
@@ -411,7 +423,7 @@ public class MainGUI extends JFrame {
     /** Campos bloqueados (como o código de um item em edição) ficam com o fundo da janela. */
     private void definirEditavel(JTextField campo, boolean editavel) {
         campo.setEditable(editavel);
-        campo.setBackground(editavel ? corCampo : corFundo);
+        campo.setBackground(editavel ? paleta.campo() : paleta.fundo());
     }
 
     /**
@@ -784,10 +796,8 @@ public class MainGUI extends JFrame {
                 g2.setRenderingHint(RenderingHints.KEY_ANTIALIASING, RenderingHints.VALUE_ANTIALIAS_ON);
 
                 boolean comFoco = c.hasFocus();
-                g2.setColor(comFoco ? COR_DESTAQUE : modoEscuro
-                        ? new Color(90, 96, 102)
-                        : new Color(195, 200, 198));
-                g2.setStroke(new BasicStroke(comFoco ? 2.5f : 1f));
+                g2.setColor(comFoco ? paleta.foco() : paleta.borda());
+                g2.setStroke(new BasicStroke(comFoco ? 2f : 1f));
                 g2.drawRoundRect(x + 1, y + 1, width - 3, height - 3, 16, 16);
                 g2.dispose();
             }
@@ -806,76 +816,268 @@ public class MainGUI extends JFrame {
     }
 
     private void aplicarTema() {
-        corFundo = modoEscuro ? new Color(35, 38, 42) : new Color(248, 248, 246);
-        corCampo = modoEscuro ? new Color(50, 54, 59) : Color.WHITE;
-        Color texto = modoEscuro ? new Color(235, 235, 235) : new Color(35, 35, 35);
-        Color fundoAbas = modoEscuro ? new Color(43, 47, 51) : new Color(236, 239, 238);
+        paleta = modoEscuro ? Paleta.ESCURO : Paleta.CLARO;
 
         // Seletor bloqueado (item em edição) continua legível.
-        UIManager.put("ComboBox.disabledForeground", modoEscuro ? new Color(165, 170, 175) : new Color(105, 110, 108));
-        UIManager.put("ComboBox.disabledBackground", corFundo);
+        UIManager.put("ComboBox.disabledForeground", paleta.textoSecundario());
+        UIManager.put("ComboBox.disabledBackground", paleta.fundo());
 
-        // A aba selecionada usa a mesma cor do conteúdo, para parecer ligada ao painel.
-        UIManager.put("TabbedPane.selected", corFundo);
-        abas.updateUI();
-
-        aplicarCores(getContentPane(), corFundo, corCampo, texto);
+        aplicarCores(getContentPane());
+        estilizarListaDoSeletor();
 
         botaoTema.setText(modoEscuro ? "☀ Modo claro" : "☾ Modo escuro");
-        abas.setBackground(fundoAbas);
-        abas.setForeground(texto);
-        for (int i = 0; i < abas.getTabCount(); i++) {
-            abas.setBackgroundAt(i, fundoAbas);
-            abas.setForegroundAt(i, texto);
-        }
         repaint();
     }
 
-    private void aplicarCores(Component componente, Color fundo, Color campo, Color texto) {
-        if (componente instanceof JTextField || componente instanceof JComboBox) {
-            if (componente instanceof JTextField campoTexto) {
-                campoTexto.setCaretColor(texto);
-                campoTexto.setBorder(criarBordaArredondada());
-                campoTexto.setBackground(campoTexto.isEditable() ? campo : fundo);
-            } else {
-                ((JComboBox<?>) componente).setBorder(criarBordaArredondada());
-                componente.setBackground(campo);
-            }
-            componente.setForeground(texto);
-        } else if (componente instanceof JTable tabela) {
-            aplicarCoresTabela(tabela, campo, texto);
+    private void aplicarCores(Component componente) {
+        if (componente instanceof JScrollBar) {
+            return; // as barras de rolagem são tratadas junto com o JScrollPane
+        }
+
+        if (componente instanceof JTextField campoTexto) {
+            campoTexto.setCaretColor(paleta.texto());
+            campoTexto.setBorder(criarBordaArredondada());
+            campoTexto.setBackground(campoTexto.isEditable() ? paleta.campo() : paleta.fundo());
+            campoTexto.setForeground(paleta.texto());
+            campoTexto.setSelectionColor(paleta.selecao());
+            campoTexto.setSelectedTextColor(paleta.textoSelecao());
+        } else if (componente instanceof JComboBox<?> seletor) {
+            seletor.setBorder(criarBordaArredondada());
+            seletor.setBackground(paleta.campo());
+            seletor.setForeground(paleta.texto());
         } else if (componente instanceof JButton botao) {
             if (botao.getParent() instanceof JComboBox) {
-                botao.setForeground(texto);
+                botao.setForeground(paleta.texto()); // seta do seletor
             } else {
-                botao.setBackground(COR_DESTAQUE);
+                botao.setBackground(paleta.botao());
                 botao.setForeground(Color.WHITE);
-                if (!(botao instanceof BotaoArredondado)) {
+                if (botao instanceof BotaoArredondado arredondado) {
+                    arredondado.setCoresDesabilitado(paleta.botaoDesabilitado(), paleta.textoBotaoDesabilitado());
+                } else {
                     botao.setOpaque(true);
                 }
             }
+        } else if (componente instanceof JTable tabela) {
+            tabela.setBackground(paleta.campo());
+            tabela.setForeground(paleta.texto());
+            tabela.setSelectionBackground(paleta.selecao());
+            tabela.setSelectionForeground(paleta.textoSelecao());
         } else {
-            componente.setBackground(fundo);
-            componente.setForeground(texto);
+            componente.setBackground(paleta.fundo());
+            componente.setForeground(paleta.texto());
         }
 
         if (componente instanceof Container container) {
             for (Component filho : container.getComponents()) {
-                aplicarCores(filho, fundo, campo, texto);
+                aplicarCores(filho);
             }
+        }
+
+        if (componente instanceof JScrollPane rolagem) {
+            estilizarRolagem(rolagem);
         }
     }
 
-    private void aplicarCoresTabela(JTable tabela, Color campo, Color texto) {
-        tabela.setBackground(campo);
-        tabela.setForeground(texto);
-        tabela.setGridColor(modoEscuro ? new Color(65, 70, 75) : new Color(225, 228, 230));
-        tabela.setSelectionBackground(modoEscuro ? new Color(48, 105, 91) : new Color(214, 235, 227));
-        tabela.setSelectionForeground(modoEscuro ? Color.WHITE : new Color(35, 55, 47));
-        tabela.getTableHeader().setBackground(modoEscuro ? new Color(43, 47, 51) : new Color(244, 246, 245));
-        tabela.getTableHeader().setForeground(texto);
-        tabela.getTableHeader().setBorder(BorderFactory.createMatteBorder(
-                0, 0, 1, 0, modoEscuro ? new Color(75, 80, 85) : new Color(215, 220, 218)));
+    /** Borda discreta, fundo da área vazia e barras de rolagem no tom do tema. */
+    private void estilizarRolagem(JScrollPane rolagem) {
+        rolagem.setBorder(BorderFactory.createLineBorder(paleta.divisoria()));
+        rolagem.getViewport().setBackground(paleta.campo());
+        rolagem.getVerticalScrollBar().setUI(new BarraRolagemUI());
+        rolagem.getHorizontalScrollBar().setUI(new BarraRolagemUI());
+        JPanel canto = new JPanel();
+        canto.setBackground(paleta.cabecalho());
+        rolagem.setCorner(JScrollPane.UPPER_RIGHT_CORNER, canto);
+    }
+
+    /** A lista que abre no seletor não faz parte da janela, então recebe as cores à parte. */
+    private void estilizarListaDoSeletor() {
+        if (seletorTipo.getUI().getAccessibleChild(seletorTipo, 0) instanceof BasicComboPopup popup) {
+            JList<Object> lista = popup.getList();
+            lista.setBackground(paleta.campo());
+            lista.setForeground(paleta.texto());
+            lista.setSelectionBackground(paleta.selecao());
+            lista.setSelectionForeground(paleta.textoSelecao());
+            popup.setBorder(BorderFactory.createLineBorder(paleta.borda()));
+        }
+    }
+
+    /**
+     * Conjunto de cores de um tema. As combinações de texto e fundo foram escolhidas para ter
+     * contraste de pelo menos 4,5:1 (recomendação WCAG para texto comum).
+     */
+    private record Paleta(Color fundo, Color campo, Color cabecalho, Color linhaAlternada,
+                          Color texto, Color textoSecundario, Color borda, Color divisoria, Color foco,
+                          Color botao, Color botaoDesabilitado, Color textoBotaoDesabilitado,
+                          Color selecao, Color textoSelecao,
+                          Color sucesso, Color aviso, Color erro, Color barraRolagem) {
+
+        static final Paleta CLARO = new Paleta(
+                new Color(246, 247, 246), Color.WHITE, new Color(236, 240, 238), new Color(246, 249, 247),
+                new Color(30, 33, 36), new Color(95, 103, 100), new Color(150, 158, 155),
+                new Color(214, 219, 217), new Color(35, 125, 95),
+                new Color(35, 125, 95), new Color(218, 223, 221), new Color(115, 123, 120),
+                new Color(200, 230, 218), new Color(18, 48, 38),
+                new Color(25, 120, 80), new Color(155, 95, 0), new Color(185, 40, 35),
+                new Color(190, 197, 194));
+
+        static final Paleta ESCURO = new Paleta(
+                new Color(28, 31, 35), new Color(40, 44, 50), new Color(34, 38, 43), new Color(46, 51, 57),
+                new Color(232, 235, 238), new Color(165, 172, 180), new Color(118, 126, 135),
+                new Color(58, 64, 71), new Color(92, 200, 160),
+                new Color(33, 123, 93), new Color(52, 57, 63), new Color(135, 142, 150),
+                new Color(30, 95, 76), Color.WHITE,
+                new Color(110, 210, 160), new Color(240, 190, 90), new Color(255, 135, 125),
+                new Color(80, 87, 95));
+    }
+
+    /** Células com espaçamento lateral, linhas alternadas e cor de destaque para as situações. */
+    private final class RenderizadorCelula extends DefaultTableCellRenderer {
+        @Override
+        public Component getTableCellRendererComponent(JTable tabela, Object valor, boolean selecionada,
+                                                       boolean comFoco, int linha, int coluna) {
+            super.getTableCellRendererComponent(tabela, valor, selecionada, false, linha, coluna);
+            setBorder(BorderFactory.createEmptyBorder(0, 10, 0, 10));
+            if (selecionada) {
+                setBackground(paleta.selecao());
+                setForeground(paleta.textoSelecao());
+            } else {
+                setBackground(linha % 2 == 0 ? paleta.campo() : paleta.linhaAlternada());
+                setForeground(corDoValor(valor));
+            }
+            return this;
+        }
+
+        private Color corDoValor(Object valor) {
+            return switch (String.valueOf(valor)) {
+                case "Disponível", "Ativo" -> paleta.sucesso();
+                case "Emprestado" -> paleta.aviso();
+                case "Expirado" -> paleta.erro();
+                case "-", "Devolvido" -> paleta.textoSecundario();
+                default -> paleta.texto();
+            };
+        }
+    }
+
+    /** Cabeçalho plano, no tom do tema, no lugar do cabeçalho em relevo do Metal. */
+    private final class RenderizadorCabecalho extends DefaultTableCellRenderer {
+        @Override
+        public Component getTableCellRendererComponent(JTable tabela, Object valor, boolean selecionada,
+                                                       boolean comFoco, int linha, int coluna) {
+            super.getTableCellRendererComponent(tabela, valor, false, false, linha, coluna);
+            setFont(new Font(FONTE, Font.BOLD, 13));
+            setBackground(paleta.cabecalho());
+            setForeground(paleta.texto());
+            setBorder(BorderFactory.createCompoundBorder(
+                    BorderFactory.createMatteBorder(0, 0, 1, 0, paleta.divisoria()),
+                    BorderFactory.createEmptyBorder(0, 10, 0, 10)));
+            return this;
+        }
+    }
+
+    /**
+     * Abas planas: a selecionada ganha uma barra na cor de destaque e texto principal; as demais
+     * usam texto secundário. Substitui o visual do Metal, que desenha contornos sempre brancos.
+     */
+    private final class AbasUI extends BasicTabbedPaneUI {
+        @Override
+        protected void installDefaults() {
+            super.installDefaults();
+            tabInsets = new Insets(8, 18, 8, 18);
+            selectedTabPadInsets = new Insets(0, 0, 0, 0);
+            tabAreaInsets = new Insets(4, 14, 0, 14);
+            contentBorderInsets = new Insets(1, 0, 0, 0);
+        }
+
+        @Override
+        protected void paintTabBackground(Graphics g, int posicao, int indice,
+                                          int x, int y, int largura, int altura, boolean selecionada) {
+            g.setColor(selecionada ? paleta.cabecalho() : paleta.fundo());
+            g.fillRect(x, y, largura, altura);
+        }
+
+        @Override
+        protected void paintTabBorder(Graphics g, int posicao, int indice,
+                                      int x, int y, int largura, int altura, boolean selecionada) {
+            if (selecionada) {
+                g.setColor(paleta.foco());
+                g.fillRect(x, y + altura - 3, largura, 3);
+            }
+        }
+
+        @Override
+        protected void paintText(Graphics g, int posicao, Font fonte, FontMetrics medidas, int indice,
+                                 String titulo, Rectangle area, boolean selecionada) {
+            g.setFont(fonte);
+            g.setColor(selecionada ? paleta.texto() : paleta.textoSecundario());
+            BasicGraphicsUtils.drawStringUnderlineCharAt(tabPane, (Graphics2D) g, titulo,
+                    tabPane.getDisplayedMnemonicIndexAt(indice), area.x, area.y + medidas.getAscent());
+        }
+
+        @Override
+        protected void paintFocusIndicator(Graphics g, int posicao, Rectangle[] retangulos, int indice,
+                                           Rectangle areaIcone, Rectangle areaTexto, boolean selecionada) {
+            if (tabPane.hasFocus() && selecionada) {
+                Graphics2D g2 = (Graphics2D) g.create();
+                g2.setRenderingHint(RenderingHints.KEY_ANTIALIASING, RenderingHints.VALUE_ANTIALIAS_ON);
+                g2.setColor(paleta.foco());
+                Rectangle r = retangulos[indice];
+                g2.drawRoundRect(r.x + 3, r.y + 3, r.width - 7, r.height - 10, 8, 8);
+                g2.dispose();
+            }
+        }
+
+        @Override
+        protected void paintContentBorder(Graphics g, int posicao, int indiceSelecionado) {
+            int topo = calculateTabAreaHeight(posicao, runCount, maxTabHeight);
+            g.setColor(paleta.divisoria());
+            g.fillRect(0, topo, tabPane.getWidth(), 1);
+        }
+    }
+
+    /** Barra de rolagem fina, sem setas, com o polegar arredondado. */
+    private final class BarraRolagemUI extends BasicScrollBarUI {
+        @Override
+        protected void configureScrollBarColors() {
+            thumbColor = paleta.barraRolagem();
+            trackColor = paleta.campo();
+        }
+
+        @Override
+        protected JButton createDecreaseButton(int orientacao) {
+            return botaoVazio();
+        }
+
+        @Override
+        protected JButton createIncreaseButton(int orientacao) {
+            return botaoVazio();
+        }
+
+        private JButton botaoVazio() {
+            JButton botao = new JButton();
+            Dimension zero = new Dimension(0, 0);
+            botao.setPreferredSize(zero);
+            botao.setMinimumSize(zero);
+            botao.setMaximumSize(zero);
+            return botao;
+        }
+
+        @Override
+        protected void paintTrack(Graphics g, JComponent c, Rectangle area) {
+            g.setColor(trackColor);
+            g.fillRect(area.x, area.y, area.width, area.height);
+        }
+
+        @Override
+        protected void paintThumb(Graphics g, JComponent c, Rectangle area) {
+            if (area.isEmpty() || !scrollbar.isEnabled()) {
+                return;
+            }
+            Graphics2D g2 = (Graphics2D) g.create();
+            g2.setRenderingHint(RenderingHints.KEY_ANTIALIASING, RenderingHints.VALUE_ANTIALIAS_ON);
+            g2.setColor(isThumbRollover() || isDragging ? paleta.textoSecundario() : thumbColor);
+            g2.fillRoundRect(area.x + 3, area.y + 3, area.width - 6, area.height - 6, 8, 8);
+            g2.dispose();
+        }
     }
 
     /**
