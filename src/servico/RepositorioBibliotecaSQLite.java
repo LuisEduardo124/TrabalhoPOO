@@ -134,8 +134,6 @@ public class RepositorioBibliotecaSQLite implements RepositorioBiblioteca {
         return item;
     }
 
-    // Implementaremos os métodos abaixo nas próximas etapas.
-
     @Override
     public List<Usuario> listarUsuarios() {
         List<Usuario> usuarios = new ArrayList<>();

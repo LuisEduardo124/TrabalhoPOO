@@ -12,7 +12,8 @@ import modelo.Usuario;
  * Os registros são perdidos quando a aplicação é encerrada.
  * As listagens retornam cópias das listas, mas mantêm as referências
  * aos mesmos objetos.
- * Implementação em memória usada por esta versão sem banco de dados.
+ * Alternativa ao {@link RepositorioBibliotecaSQLite} para testar as regras
+ * de negócio sem banco de dados.
  */
 public class RepositorioBibliotecaMemoria implements RepositorioBiblioteca {
     private final List<ItemBiblioteca> itens = new ArrayList<>();

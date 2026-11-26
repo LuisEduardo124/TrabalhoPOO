@@ -7,8 +7,6 @@ import modelo.ItemBiblioteca;
 import modelo.ItemIndisponivelException;
 import modelo.Livro;
 import modelo.Revista;
-import modelo.Livro;
-import modelo.Revista;
 import modelo.Usuario;
 
 /** Executa as regras de negócio sem conhecer a interface ou o tipo de armazenamento. */

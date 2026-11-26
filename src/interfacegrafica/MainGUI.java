@@ -4,6 +4,8 @@ import java.awt.*;
 import java.awt.event.FocusAdapter;
 import java.awt.event.FocusEvent;
 import java.awt.event.KeyEvent;
+import java.awt.event.WindowAdapter;
+import java.awt.event.WindowEvent;
 import java.time.format.DateTimeFormatter;
 import java.util.ArrayList;
 import java.util.Collections;
@@ -18,9 +20,12 @@ import java.util.logging.Logger;
 
 import javax.swing.AbstractAction;
 import javax.swing.BorderFactory;
+import javax.swing.Box;
+import javax.swing.BoxLayout;
 import javax.swing.JButton;
 import javax.swing.JComboBox;
 import javax.swing.JComponent;
+import javax.swing.JDialog;
 import javax.swing.JFrame;
 import javax.swing.JLabel;
 import javax.swing.JList;
@@ -35,12 +40,12 @@ import javax.swing.KeyStroke;
 import javax.swing.ListSelectionModel;
 import javax.swing.SwingUtilities;
 import javax.swing.SwingWorker;
+import javax.swing.Timer;
 import javax.swing.UIManager;
 import javax.swing.border.AbstractBorder;
 import javax.swing.border.Border;
 import javax.swing.plaf.basic.BasicComboBoxUI;
 import javax.swing.plaf.basic.BasicComboPopup;
-import javax.swing.plaf.basic.BasicGraphicsUtils;
 import javax.swing.plaf.basic.BasicTabbedPaneUI;
 import javax.swing.plaf.basic.BasicScrollBarUI;
 import javax.swing.table.DefaultTableCellRenderer;
@@ -64,6 +69,18 @@ public class MainGUI extends JFrame {
     private static final Logger LOGGER = Logger.getLogger(MainGUI.class.getName());
     private static final DateTimeFormatter FORMATO_DATA = DateTimeFormatter.ofPattern("dd/MM/yyyy HH:mm");
     private static final String FONTE = "Segoe UI";
+    private static final Font FONTE_TEXTO = new Font(FONTE, Font.PLAIN, 14);
+    /** Largura preferida dos campos: evita campos esticados por toda a janela em telas largas. */
+    private static final int LARGURA_CAMPO = 460;
+    /** Propriedade que marca rótulos de texto secundário (dicas), coloridos à parte pelo tema. */
+    private static final String SECUNDARIO = "biblioteca.secundario";
+    /** Propriedade que define o estilo de um botão: {@link #PAPEL_SECUNDARIO} ou {@link #PAPEL_PERIGO}. */
+    private static final String PAPEL = "biblioteca.papel";
+    private static final String PAPEL_SECUNDARIO = "secundario";
+    private static final String PAPEL_PERIGO = "perigo";
+
+    /** Tipo de mensagem exibida na barra de status, que define a cor do texto. */
+    private enum TipoMensagem { INFO, SUCESSO, ERRO }
 
     /** Serviço de regras de negócio usado pela janela. */
     private final Biblioteca biblioteca;
@@ -83,7 +100,14 @@ public class MainGUI extends JFrame {
     private final Map<Integer, Usuario> usuariosPorId = new HashMap<>();
     private List<Emprestimo> emprestimosExibidos = new ArrayList<>();
 
-    private final JButton botaoTema = new BotaoArredondado("☾ Modo escuro");
+    private final JButton botaoTema = new BotaoArredondado("Modo escuro");
+    private JPanel barraStatus;
+    private final JLabel rotuloStatus = new JLabel();
+    private TipoMensagem tipoStatus = TipoMensagem.INFO;
+    /** Apaga a mensagem de sucesso da barra de status depois de alguns segundos. */
+    private final Timer temporizadorStatus = new Timer(8000, e -> mostrarStatus(" ", TipoMensagem.INFO));
+    private JLabel tituloFormularioItem;
+    private JLabel tituloFormularioUsuario;
     private JButton botaoCadastrarItem;
     private JButton botaoSalvarItem;
     private JButton botaoExcluirItem;
@@ -137,14 +161,14 @@ public class MainGUI extends JFrame {
         abas.addTab("Itens", criarPainelItens());
         abas.addTab("Usuários", criarPainelUsuarios());
         abas.addTab("Empréstimos", criarPainelEmprestimos());
+        // Alt+I, Alt+U e Alt+M abrem as abas pelo teclado.
+        abas.setMnemonicAt(0, KeyEvent.VK_I);
+        abas.setMnemonicAt(1, KeyEvent.VK_U);
+        abas.setMnemonicAt(2, KeyEvent.VK_M);
 
-        JPanel cabecalho = new JPanel(new FlowLayout(FlowLayout.RIGHT, 12, 8));
-        cabecalho.add(botaoTema);
-        botaoTema.setMnemonic(KeyEvent.VK_T);
-        botaoTema.addActionListener(e -> alternarTema());
-
-        add(cabecalho, BorderLayout.NORTH);
+        add(criarCabecalho(), BorderLayout.NORTH);
         add(abas, BorderLayout.CENTER);
+        add(criarBarraStatus(), BorderLayout.SOUTH);
 
         configurarTabela(tabelaItens, 100, 380, 100, 150);
         configurarTabela(tabelaUsuarios, 70, 300, 400);
@@ -154,9 +178,17 @@ public class MainGUI extends JFrame {
         estilizarSeletor();
 
         aplicarTema();
-        seletorTipo.setPreferredSize(new Dimension(10, campoCodigo.getPreferredSize().height));
+        seletorTipo.setPreferredSize(new Dimension(LARGURA_CAMPO, campoCodigo.getPreferredSize().height));
         atualizarEstadoBotoes();
         atualizarListas();
+
+        // Ao abrir, o foco vai para o primeiro campo do formulário, e não para o botão de tema.
+        addWindowListener(new WindowAdapter() {
+            @Override
+            public void windowOpened(WindowEvent evento) {
+                seletorTipo.requestFocusInWindow();
+            }
+        });
     }
 
     // ------------------------------------------------------------------ montagem das telas
@@ -168,12 +200,61 @@ public class MainGUI extends JFrame {
         setLocationRelativeTo(null);
         setDefaultCloseOperation(JFrame.EXIT_ON_CLOSE);
 
-        UIManager.put("Label.font", new Font(FONTE, Font.PLAIN, 14));
-        UIManager.put("Button.font", new Font(FONTE, Font.PLAIN, 14));
+        UIManager.put("Label.font", FONTE_TEXTO);
+        UIManager.put("Button.font", FONTE_TEXTO);
+    }
+
+    /** Faixa superior com o nome do sistema à esquerda e o botão de tema à direita. */
+    private JPanel criarCabecalho() {
+        JLabel titulo = new JLabel("Biblioteca");
+        titulo.setFont(new Font(FONTE, Font.BOLD, 20));
+        JLabel subtitulo = new JLabel("Sistema de Gestão de Acervo");
+        subtitulo.setFont(new Font(FONTE, Font.PLAIN, 13));
+        subtitulo.putClientProperty(SECUNDARIO, Boolean.TRUE);
+        subtitulo.setBorder(BorderFactory.createEmptyBorder(0, 12, 0, 0));
+
+        FlowLayout fluxo = new FlowLayout(FlowLayout.LEFT, 0, 0);
+        fluxo.setAlignOnBaseline(true);
+        JPanel identificacao = new JPanel(fluxo);
+        identificacao.add(titulo);
+        identificacao.add(subtitulo);
+
+        botaoTema.setFont(FONTE_TEXTO);
+        botaoTema.setMnemonic(KeyEvent.VK_T);
+        botaoTema.setToolTipText("Alternar entre modo claro e escuro (Ctrl+T)");
+        botaoTema.putClientProperty(PAPEL, PAPEL_SECUNDARIO);
+        botaoTema.addActionListener(e -> alternarTema());
+        dimensionarBotao(botaoTema, "Modo escuro");
+        botaoTema.setPreferredSize(new Dimension(botaoTema.getPreferredSize().width, 32));
+
+        JPanel cabecalho = new JPanel(new BorderLayout());
+        cabecalho.setBorder(BorderFactory.createEmptyBorder(8, 16, 0, 16));
+        cabecalho.add(identificacao, BorderLayout.WEST);
+        JPanel direita = new JPanel(new FlowLayout(FlowLayout.RIGHT, 0, 0));
+        direita.add(botaoTema);
+        cabecalho.add(direita, BorderLayout.EAST);
+        return cabecalho;
+    }
+
+    /** Barra inferior com as mensagens de sucesso/erro à esquerda e os atalhos de teclado à direita. */
+    private JPanel criarBarraStatus() {
+        temporizadorStatus.setRepeats(false);
+        rotuloStatus.setFont(new Font(FONTE, Font.PLAIN, 13));
+        rotuloStatus.setText(" ");
+
+        JLabel atalhos = new JLabel("Enter: confirmar   ·   Esc: limpar   ·   Ctrl+T: tema");
+        atalhos.setFont(new Font(FONTE, Font.PLAIN, 12));
+        atalhos.putClientProperty(SECUNDARIO, Boolean.TRUE);
+
+        barraStatus = new JPanel(new BorderLayout(12, 0));
+        barraStatus.add(rotuloStatus, BorderLayout.CENTER);
+        barraStatus.add(atalhos, BorderLayout.EAST);
+        return barraStatus;
     }
 
     private JPanel criarPainelItens() {
         Formulario formulario = new Formulario();
+        tituloFormularioItem = formulario.adicionarTitulo("Novo item");
         formulario.adicionarCampo("Tipo de item:", seletorTipo);
         formulario.adicionarCampo("Código:", campoCodigo);
         formulario.adicionarCampo("Título:", campoTitulo);
@@ -186,7 +267,9 @@ public class MainGUI extends JFrame {
         botaoCadastrarItem = criarBotao("Cadastrar", KeyEvent.VK_C, e -> cadastrarItem());
         botaoSalvarItem = criarBotao("Salvar alterações", KeyEvent.VK_S, e -> salvarItem());
         botaoExcluirItem = criarBotao("Excluir", KeyEvent.VK_X, e -> excluirItem());
+        botaoExcluirItem.putClientProperty(PAPEL, PAPEL_PERIGO);
         botaoLimparItem = criarBotao("Limpar", KeyEvent.VK_L, e -> limparFormularioItem());
+        botaoLimparItem.putClientProperty(PAPEL, PAPEL_SECUNDARIO);
         formulario.adicionarAcoes(botaoCadastrarItem, botaoSalvarItem, botaoExcluirItem, botaoLimparItem);
 
         return montarPainel(formulario, tabelaItens);
@@ -194,14 +277,18 @@ public class MainGUI extends JFrame {
 
     private JPanel criarPainelUsuarios() {
         Formulario formulario = new Formulario();
+        tituloFormularioUsuario = formulario.adicionarTitulo("Novo usuário");
         formulario.adicionarCampo("ID:", campoIdUsuario);
         formulario.adicionarCampo("Nome:", campoNome);
         formulario.adicionarCampo("E-mail:", campoEmail);
 
-        botaoCadastrarUsuario = criarBotao("Cadastrar", KeyEvent.VK_U, e -> cadastrarUsuario());
+        // Mesmo atalho (Alt+C) do Cadastrar da aba Itens; antes era Alt+U, letra que não aparece no texto.
+        botaoCadastrarUsuario = criarBotao("Cadastrar", KeyEvent.VK_C, e -> cadastrarUsuario());
         botaoSalvarUsuario = criarBotao("Salvar alterações", KeyEvent.VK_S, e -> salvarUsuario());
         botaoExcluirUsuario = criarBotao("Excluir", KeyEvent.VK_X, e -> excluirUsuario());
+        botaoExcluirUsuario.putClientProperty(PAPEL, PAPEL_PERIGO);
         botaoLimparUsuario = criarBotao("Limpar", KeyEvent.VK_L, e -> limparFormularioUsuario());
+        botaoLimparUsuario.putClientProperty(PAPEL, PAPEL_SECUNDARIO);
         formulario.adicionarAcoes(botaoCadastrarUsuario, botaoSalvarUsuario, botaoExcluirUsuario, botaoLimparUsuario);
 
         return montarPainel(formulario, tabelaUsuarios);
@@ -209,6 +296,7 @@ public class MainGUI extends JFrame {
 
     private JPanel criarPainelEmprestimos() {
         Formulario formulario = new Formulario();
+        formulario.adicionarTitulo("Empréstimo e devolução");
         formulario.adicionarCampo("Código do item:", campoCodigoEmprestimo);
         formulario.adicionarCampo("ID do usuário:", campoIdEmprestimo);
 
@@ -227,6 +315,18 @@ public class MainGUI extends JFrame {
         rolagem.getVerticalScrollBar().setPreferredSize(new Dimension(12, 0));
         rolagem.getHorizontalScrollBar().setPreferredSize(new Dimension(0, 12));
         rolagem.getVerticalScrollBar().setUnitIncrement(16);
+        // A borda da tabela fica na cor de destaque enquanto ela tem o foco do teclado.
+        tabela.addFocusListener(new FocusAdapter() {
+            @Override
+            public void focusGained(FocusEvent evento) {
+                rolagem.repaint();
+            }
+
+            @Override
+            public void focusLost(FocusEvent evento) {
+                rolagem.repaint();
+            }
+        });
         painel.add(rolagem, BorderLayout.CENTER);
         return painel;
     }
@@ -235,8 +335,14 @@ public class MainGUI extends JFrame {
         JButton botao = new BotaoArredondado(texto);
         botao.setMnemonic(mnemonico);
         botao.addActionListener(acao);
-        botao.setPreferredSize(new Dimension(150, 36));
+        dimensionarBotao(botao, texto);
         return botao;
+    }
+
+    /** Largura proporcional ao texto (com mínimo de 112 px) e altura padrão de 36 px. */
+    private static void dimensionarBotao(JButton botao, String textoMaisLongo) {
+        int larguraTexto = botao.getFontMetrics(botao.getFont()).stringWidth(textoMaisLongo);
+        botao.setPreferredSize(new Dimension(Math.max(112, larguraTexto + 40), 36));
     }
 
     private static DefaultTableModel criarModelo(String... colunas) {
@@ -331,7 +437,10 @@ public class MainGUI extends JFrame {
         });
     }
 
-    /** Registra atalhos globais: Ctrl+T alterna o tema e a troca de aba atualiza o botão do Enter. */
+    /**
+     * Registra atalhos globais: Ctrl+T alterna o tema, Esc limpa o formulário da aba aberta
+     * e a troca de aba atualiza o botão do Enter.
+     */
     private void configurarAtalhos() {
         getRootPane().getInputMap(JComponent.WHEN_IN_FOCUSED_WINDOW).put(
                 KeyStroke.getKeyStroke(KeyEvent.VK_T, KeyEvent.CTRL_DOWN_MASK), "alternarTema");
@@ -339,6 +448,21 @@ public class MainGUI extends JFrame {
             @Override
             public void actionPerformed(java.awt.event.ActionEvent evento) {
                 alternarTema();
+            }
+        });
+        getRootPane().getInputMap(JComponent.WHEN_IN_FOCUSED_WINDOW).put(
+                KeyStroke.getKeyStroke(KeyEvent.VK_ESCAPE, 0), "limparFormulario");
+        getRootPane().getActionMap().put("limparFormulario", new AbstractAction() {
+            @Override
+            public void actionPerformed(java.awt.event.ActionEvent evento) {
+                if (operacoesEmAndamento > 0) {
+                    return;
+                }
+                switch (abas.getSelectedIndex()) {
+                    case 0 -> limparFormularioItem();
+                    case 1 -> limparFormularioUsuario();
+                    default -> limparFormularioEmprestimo();
+                }
             }
         });
         abas.addChangeListener(evento -> atualizarBotaoPadrao());
@@ -379,6 +503,8 @@ public class MainGUI extends JFrame {
         }
         definirEditavel(campoCodigo, false);
         seletorTipo.setEnabled(false);
+        seletorTipo.setBackground(paleta.fundo());
+        tituloFormularioItem.setText("Editando " + item.getTipo().toLowerCase() + " " + item.getCodigo());
         atualizarEstadoBotoes();
     }
 
@@ -391,6 +517,8 @@ public class MainGUI extends JFrame {
         campoEdicao.setText("");
         definirEditavel(campoCodigo, true);
         seletorTipo.setEnabled(true);
+        seletorTipo.setBackground(paleta.campo());
+        tituloFormularioItem.setText("Novo item");
         tabelaItens.clearSelection();
         atualizarEstadoBotoes();
     }
@@ -401,6 +529,7 @@ public class MainGUI extends JFrame {
         campoNome.setText(usuario.getNome());
         campoEmail.setText(usuario.getEmail());
         definirEditavel(campoIdUsuario, false);
+        tituloFormularioUsuario.setText("Editando usuário " + usuario.getId());
         atualizarEstadoBotoes();
     }
 
@@ -410,6 +539,7 @@ public class MainGUI extends JFrame {
         campoNome.setText("");
         campoEmail.setText("");
         definirEditavel(campoIdUsuario, true);
+        tituloFormularioUsuario.setText("Novo usuário");
         tabelaUsuarios.clearSelection();
         atualizarEstadoBotoes();
     }
@@ -585,10 +715,42 @@ public class MainGUI extends JFrame {
         }, this::limparFormularioEmprestimo);
     }
 
+    /**
+     * Pede confirmação antes de uma exclusão. O foco inicial fica em "Cancelar", para que um
+     * Enter acidental não apague o registro.
+     */
     private boolean confirmar(String mensagem) {
-        int resposta = JOptionPane.showConfirmDialog(this, mensagem, "Confirmar exclusão",
-                JOptionPane.YES_NO_OPTION, JOptionPane.WARNING_MESSAGE);
-        return resposta == JOptionPane.YES_OPTION;
+        JButton excluir = new BotaoArredondado("Excluir");
+        excluir.putClientProperty(PAPEL, PAPEL_PERIGO);
+        JButton cancelar = new BotaoArredondado("Cancelar");
+        cancelar.putClientProperty(PAPEL, PAPEL_SECUNDARIO);
+        return mostrarDialogo(mensagem, "Confirmar exclusão", JOptionPane.WARNING_MESSAGE,
+                cancelar, excluir, cancelar) == excluir;
+    }
+
+    /**
+     * Mostra um diálogo modal com as cores do tema atual (o JOptionPane padrão fica sempre claro).
+     *
+     * @param mensagem texto exibido
+     * @param titulo   título da janela
+     * @param tipo     tipo de mensagem do {@link JOptionPane}, que define o ícone
+     * @param inicial  botão que recebe o foco e responde ao Enter
+     * @param botoes   botões exibidos, na ordem
+     * @return o botão escolhido, ou {@code null} se o diálogo foi fechado com Esc ou pelo X
+     */
+    private Object mostrarDialogo(String mensagem, String titulo, int tipo, JButton inicial, JButton... botoes) {
+        JOptionPane painel = new JOptionPane(mensagem, tipo, JOptionPane.DEFAULT_OPTION, null, botoes, inicial);
+        for (JButton botao : botoes) {
+            botao.setFont(FONTE_TEXTO);
+            dimensionarBotao(botao, botao.getText());
+            botao.addActionListener(e -> painel.setValue(botao));
+        }
+        aplicarCores(painel);
+        JDialog dialogo = painel.createDialog(this, titulo);
+        dialogo.getContentPane().setBackground(paleta.fundo());
+        dialogo.setVisible(true);
+        dialogo.dispose();
+        return painel.getValue();
     }
 
     /**
@@ -745,12 +907,32 @@ public class MainGUI extends JFrame {
         }
     }
 
+    /** Erros e falhas de validação exigem atenção: aparecem em diálogo e ficam registrados na barra de status. */
     private void mostrarErro(String mensagem) {
-        JOptionPane.showMessageDialog(this, mensagem, "Erro", JOptionPane.ERROR_MESSAGE);
+        mostrarStatus(mensagem.replace('\n', ' '), TipoMensagem.ERRO);
+        JButton ok = new BotaoArredondado("OK");
+        mostrarDialogo(mensagem, "Não foi possível concluir", JOptionPane.ERROR_MESSAGE, ok, ok);
     }
 
+    /** Sucesso não interrompe o trabalho: a mensagem aparece na barra de status e some sozinha. */
     private void mostrarMensagem(String mensagem) {
-        JOptionPane.showMessageDialog(this, mensagem, "Biblioteca", JOptionPane.INFORMATION_MESSAGE);
+        mostrarStatus(mensagem.replace("\n", " "), TipoMensagem.SUCESSO);
+        temporizadorStatus.restart();
+    }
+
+    private void mostrarStatus(String mensagem, TipoMensagem tipo) {
+        temporizadorStatus.stop();
+        tipoStatus = tipo;
+        rotuloStatus.setText(mensagem);
+        colorirStatus();
+    }
+
+    private void colorirStatus() {
+        rotuloStatus.setForeground(switch (tipoStatus) {
+            case SUCESSO -> paleta.sucesso();
+            case ERRO -> paleta.erro();
+            case INFO -> paleta.textoSecundario();
+        });
     }
 
     // ------------------------------------------------------------------ aparência
@@ -824,8 +1006,12 @@ public class MainGUI extends JFrame {
 
         aplicarCores(getContentPane());
         estilizarListaDoSeletor();
+        barraStatus.setBorder(BorderFactory.createCompoundBorder(
+                BorderFactory.createMatteBorder(1, 0, 0, 0, paleta.divisoria()),
+                BorderFactory.createEmptyBorder(6, 16, 6, 16)));
+        colorirStatus();
 
-        botaoTema.setText(modoEscuro ? "☀ Modo claro" : "☾ Modo escuro");
+        botaoTema.setText(modoEscuro ? "Modo claro" : "Modo escuro");
         repaint();
     }
 
@@ -843,16 +1029,21 @@ public class MainGUI extends JFrame {
             campoTexto.setSelectedTextColor(paleta.textoSelecao());
         } else if (componente instanceof JComboBox<?> seletor) {
             seletor.setBorder(criarBordaArredondada());
-            seletor.setBackground(paleta.campo());
+            seletor.setBackground(seletor.isEnabled() ? paleta.campo() : paleta.fundo());
             seletor.setForeground(paleta.texto());
         } else if (componente instanceof JButton botao) {
             if (botao.getParent() instanceof JComboBox) {
                 botao.setForeground(paleta.texto()); // seta do seletor
             } else {
-                botao.setBackground(paleta.botao());
-                botao.setForeground(Color.WHITE);
+                // Principal: verde preenchido; perigo (Excluir): vermelho; secundário: contornado.
+                Object papel = botao.getClientProperty(PAPEL);
+                boolean secundario = PAPEL_SECUNDARIO.equals(papel);
+                botao.setBackground(secundario ? paleta.campo()
+                        : PAPEL_PERIGO.equals(papel) ? paleta.perigo() : paleta.botao());
+                botao.setForeground(secundario ? paleta.texto() : Color.WHITE);
                 if (botao instanceof BotaoArredondado arredondado) {
                     arredondado.setCoresDesabilitado(paleta.botaoDesabilitado(), paleta.textoBotaoDesabilitado());
+                    arredondado.setCorContorno(secundario ? paleta.borda() : null);
                 } else {
                     botao.setOpaque(true);
                 }
@@ -864,7 +1055,9 @@ public class MainGUI extends JFrame {
             tabela.setSelectionForeground(paleta.textoSelecao());
         } else {
             componente.setBackground(paleta.fundo());
-            componente.setForeground(paleta.texto());
+            boolean secundario = componente instanceof JComponent jc
+                    && Boolean.TRUE.equals(jc.getClientProperty(SECUNDARIO));
+            componente.setForeground(secundario ? paleta.textoSecundario() : paleta.texto());
         }
 
         if (componente instanceof Container container) {
@@ -878,9 +1071,12 @@ public class MainGUI extends JFrame {
         }
     }
 
-    /** Borda discreta, fundo da área vazia e barras de rolagem no tom do tema. */
+    /**
+     * Borda discreta (que destaca a tabela quando ela tem o foco), fundo da área vazia e
+     * barras de rolagem no tom do tema.
+     */
     private void estilizarRolagem(JScrollPane rolagem) {
-        rolagem.setBorder(BorderFactory.createLineBorder(paleta.divisoria()));
+        rolagem.setBorder(new BordaTabela());
         rolagem.getViewport().setBackground(paleta.campo());
         rolagem.getVerticalScrollBar().setUI(new BarraRolagemUI());
         rolagem.getHorizontalScrollBar().setUI(new BarraRolagemUI());
@@ -907,7 +1103,7 @@ public class MainGUI extends JFrame {
      */
     private record Paleta(Color fundo, Color campo, Color cabecalho, Color linhaAlternada,
                           Color texto, Color textoSecundario, Color borda, Color divisoria, Color foco,
-                          Color botao, Color botaoDesabilitado, Color textoBotaoDesabilitado,
+                          Color botao, Color perigo, Color botaoDesabilitado, Color textoBotaoDesabilitado,
                           Color selecao, Color textoSelecao,
                           Color sucesso, Color aviso, Color erro, Color barraRolagem) {
 
@@ -915,7 +1111,7 @@ public class MainGUI extends JFrame {
                 new Color(246, 247, 246), Color.WHITE, new Color(236, 240, 238), new Color(246, 249, 247),
                 new Color(30, 33, 36), new Color(95, 103, 100), new Color(150, 158, 155),
                 new Color(214, 219, 217), new Color(35, 125, 95),
-                new Color(35, 125, 95), new Color(218, 223, 221), new Color(115, 123, 120),
+                new Color(35, 125, 95), new Color(180, 45, 40), new Color(218, 223, 221), new Color(115, 123, 120),
                 new Color(200, 230, 218), new Color(18, 48, 38),
                 new Color(25, 120, 80), new Color(155, 95, 0), new Color(185, 40, 35),
                 new Color(190, 197, 194));
@@ -924,10 +1120,38 @@ public class MainGUI extends JFrame {
                 new Color(28, 31, 35), new Color(40, 44, 50), new Color(34, 38, 43), new Color(46, 51, 57),
                 new Color(232, 235, 238), new Color(165, 172, 180), new Color(118, 126, 135),
                 new Color(58, 64, 71), new Color(92, 200, 160),
-                new Color(33, 123, 93), new Color(52, 57, 63), new Color(135, 142, 150),
+                new Color(33, 123, 93), new Color(172, 52, 46), new Color(52, 57, 63), new Color(135, 142, 150),
                 new Color(30, 95, 76), Color.WHITE,
                 new Color(110, 210, 160), new Color(240, 190, 90), new Color(255, 135, 125),
                 new Color(80, 87, 95));
+    }
+
+    /**
+     * Borda de 2 px das tabelas: a linha externa é a divisória do tema e a interna só aparece
+     * (na cor de destaque) quando a tabela tem o foco do teclado, sem alterar o tamanho da área.
+     */
+    private final class BordaTabela extends AbstractBorder {
+        @Override
+        public void paintBorder(Component c, Graphics g, int x, int y, int largura, int altura) {
+            boolean comFoco = c instanceof JScrollPane rolagem
+                    && rolagem.getViewport().getView() != null
+                    && rolagem.getViewport().getView().hasFocus();
+            g.setColor(comFoco ? paleta.foco() : paleta.divisoria());
+            g.drawRect(x, y, largura - 1, altura - 1);
+            g.setColor(comFoco ? paleta.foco() : paleta.campo());
+            g.drawRect(x + 1, y + 1, largura - 3, altura - 3);
+        }
+
+        @Override
+        public Insets getBorderInsets(Component c) {
+            return new Insets(2, 2, 2, 2);
+        }
+
+        @Override
+        public Insets getBorderInsets(Component c, Insets insets) {
+            insets.set(2, 2, 2, 2);
+            return insets;
+        }
     }
 
     /** Células com espaçamento lateral, linhas alternadas e cor de destaque para as situações. */
@@ -1009,8 +1233,7 @@ public class MainGUI extends JFrame {
                                  String titulo, Rectangle area, boolean selecionada) {
             g.setFont(fonte);
             g.setColor(selecionada ? paleta.texto() : paleta.textoSecundario());
-            BasicGraphicsUtils.drawStringUnderlineCharAt(tabPane, (Graphics2D) g, titulo,
-                    tabPane.getDisplayedMnemonicIndexAt(indice), area.x, area.y + medidas.getAscent());
+            g.drawString(titulo, area.x, area.y + medidas.getAscent());
         }
 
         @Override
@@ -1101,34 +1324,60 @@ public class MainGUI extends JFrame {
     }
 
     /**
-     * Painel de formulário com rótulos à esquerda e campos à direita, alinhados em duas colunas,
-     * seguido de uma linha de botões alinhada à direita.
+     * Painel de formulário com título, rótulos à esquerda e campos à direita, alinhados em duas
+     * colunas de largura fixa, seguido de uma linha de botões alinhada aos campos. Uma terceira
+     * coluna vazia absorve a sobra de largura, para os campos não esticarem em janelas largas.
      */
     private static final class Formulario extends JPanel {
         private int linha = 0;
 
         Formulario() {
             super(new GridBagLayout());
-            setBorder(BorderFactory.createEmptyBorder(6, 4, 10, 4));
+            setBorder(BorderFactory.createEmptyBorder(4, 4, 10, 4));
+
+            GridBagConstraints sobra = new GridBagConstraints();
+            sobra.gridx = 2;
+            sobra.gridy = 0;
+            sobra.weightx = 1;
+            add(Box.createHorizontalGlue(), sobra);
+        }
+
+        /**
+         * Adiciona o título do formulário.
+         *
+         * @return o rótulo do título, para que possa indicar o modo (novo ou edição)
+         */
+        JLabel adicionarTitulo(String titulo) {
+            JLabel rotuloTitulo = new JLabel(titulo);
+            rotuloTitulo.setFont(new Font(FONTE, Font.BOLD, 16));
+
+            GridBagConstraints c = new GridBagConstraints();
+            c.gridy = linha++;
+            c.gridx = 0;
+            c.gridwidth = 3;
+            c.fill = GridBagConstraints.HORIZONTAL;
+            c.insets = new Insets(0, 0, 4, 0);
+            add(rotuloTitulo, c);
+            return rotuloTitulo;
         }
 
         JLabel adicionarCampo(String texto, JComponent campo) {
             JLabel rotulo = new JLabel(texto);
             rotulo.setLabelFor(campo);
             rotulo.setPreferredSize(new Dimension(140, rotulo.getPreferredSize().height));
+            campo.setFont(FONTE_TEXTO);
 
             GridBagConstraints c = new GridBagConstraints();
             c.gridy = linha++;
             c.anchor = GridBagConstraints.WEST;
 
             c.gridx = 0;
-            c.insets = new Insets(4, 0, 4, 12);
+            c.insets = new Insets(3, 0, 3, 12);
             add(rotulo, c);
 
             c.gridx = 1;
-            c.weightx = 1;
             c.fill = GridBagConstraints.HORIZONTAL;
-            c.insets = new Insets(4, 0, 4, 0);
+            c.insets = new Insets(3, 0, 3, 0);
             add(campo, c);
 
             if (campo instanceof JTextField campoTexto) {
@@ -1147,20 +1396,30 @@ public class MainGUI extends JFrame {
             return rotulo;
         }
 
+        /** Adiciona os botões abaixo dos campos, começando na mesma linha vertical deles. */
         void adicionarAcoes(JButton... botoes) {
-            JPanel faixa = new JPanel(new FlowLayout(FlowLayout.RIGHT, 8, 0));
-            for (JButton botao : botoes) {
-                faixa.add(botao);
+            JPanel faixa = new JPanel();
+            faixa.setLayout(new BoxLayout(faixa, BoxLayout.X_AXIS));
+            for (int i = 0; i < botoes.length; i++) {
+                if (i > 0) {
+                    faixa.add(Box.createHorizontalStrut(8));
+                }
+                faixa.add(botoes[i]);
             }
 
             GridBagConstraints c = new GridBagConstraints();
             c.gridy = linha++;
-            c.gridx = 0;
+            c.gridx = 1;
             c.gridwidth = 2;
-            c.weightx = 1;
-            c.fill = GridBagConstraints.HORIZONTAL;
+            c.anchor = GridBagConstraints.WEST;
             c.insets = new Insets(10, 0, 0, 0);
             add(faixa, c);
+
+            // Espaçador invisível que fixa a largura da coluna dos campos.
+            GridBagConstraints largura = new GridBagConstraints();
+            largura.gridy = linha++;
+            largura.gridx = 1;
+            add(Box.createHorizontalStrut(LARGURA_CAMPO), largura);
         }
     }
 }
