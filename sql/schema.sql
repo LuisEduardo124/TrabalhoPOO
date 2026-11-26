@@ -17,11 +17,20 @@ CREATE TABLE IF NOT EXISTS usuarios (
 
 -- Registra os empréstimos e vincula cada item ao usuário.
 CREATE TABLE IF NOT EXISTS emprestimos (
-                                           id INTEGER PRIMARY KEY,
-                                           codigo_item TEXT NOT NULL REFERENCES itens(codigo),
+    id INTEGER PRIMARY KEY,
+    codigo_item TEXT NOT NULL REFERENCES itens(codigo),
     id_usuario INTEGER NOT NULL REFERENCES usuarios(id),
     data_emprestimo TEXT NOT NULL,
     data_devolucao TEXT,
     status TEXT NOT NULL DEFAULT 'ATIVO'
-    CHECK (status IN ('ATIVO', 'DEVOLVIDO', 'EXPIRADO'))
-    );
+        CHECK (status IN ('ATIVO', 'DEVOLVIDO', 'EXPIRADO')),
+    CHECK (
+        (status = 'DEVOLVIDO' AND data_devolucao IS NOT NULL)
+        OR (status IN ('ATIVO', 'EXPIRADO') AND data_devolucao IS NULL)
+    )
+);
+
+-- Um item não pode ter mais de um empréstimo ativo simultaneamente.
+CREATE UNIQUE INDEX IF NOT EXISTS idx_emprestimos_item_ativo
+    ON emprestimos (codigo_item)
+    WHERE status = 'ATIVO';

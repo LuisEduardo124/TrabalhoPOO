@@ -147,6 +147,16 @@ precisam manter mais de uma alteração consistente.
 A classe `ConexaoSQLite` centraliza a abertura das conexões e ativa
 `PRAGMA foreign_keys = ON`.
 
+O script `sql/schema.sql` também restringe os empréstimos: aceita somente
+os status `ATIVO`, `DEVOLVIDO` e `EXPIRADO`; exige data de devolução para
+registros `DEVOLVIDO` e não permite essa data nos demais status; e cria um
+índice único parcial para impedir mais de um empréstimo `ATIVO` por item.
+Essas regras usam recursos disponíveis tanto no SQLite quanto no
+PostgreSQL. Como o script usa `CREATE TABLE IF NOT EXISTS`, as novas
+restrições da tabela não são aplicadas automaticamente a bancos já
+existentes; nesses bancos, é necessário migrar a tabela antes de depender
+delas.
+
 ## Estrutura do projeto
 
 ``` text

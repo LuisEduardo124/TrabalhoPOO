@@ -6,6 +6,13 @@
             "name": "MainGUI",
             "request": "launch",
             "mainClass": "interfacegrafica.MainGUI",
+            "projectName": "TrabalhoPOO_80632336"
+        },
+        {
+            "type": "java",
+            "name": "MainGUI",
+            "request": "launch",
+            "mainClass": "interfacegrafica.MainGUI",
             "projectName": "TrabalhoPOO-1_4eff544b"
         },
         {
