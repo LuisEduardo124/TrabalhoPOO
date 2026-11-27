@@ -1,8 +1,6 @@
 package interfacegrafica;
 import servico.RepositorioBiblioteca;
 import servico.RepositorioBibliotecaSQLite;
-import servico.RepositorioBibliotecaPostgres;
-import servico.ConexaoPostgres;
 import servico.InicializadorBancoSQLite;
 
 import java.awt.*;
@@ -2078,52 +2076,28 @@ public class MainGUI extends JFrame {
      * @param args argumentos da linha de comando, não utilizados
      */
 
+
     public static void main(String[] args) {
-
-        String banco = System.getenv()
-                .getOrDefault("BIBLIOTECA_BANCO", "sqlite");
-
-        RepositorioBiblioteca repositorio;
-
         try {
-            if ("postgres".equalsIgnoreCase(banco)) {
-                // PostgreSQL já está configurado no Docker.
-                try (java.sql.Connection conexao =
-                             ConexaoPostgres.conectar()) {
-                    System.out.println("PostgreSQL conectado!");
-                }
-
-                repositorio = new RepositorioBibliotecaPostgres();
-
-            } else if ("sqlite".equalsIgnoreCase(banco)) {
-                InicializadorBancoSQLite.inicializar();
-                repositorio = new RepositorioBibliotecaSQLite();
-
-            } else {
-                throw new IllegalArgumentException(
-                        "Banco desconhecido: " + banco
-                );
-            }
-
-        } catch (Exception erro) {
+            InicializadorBancoSQLite.inicializar();
+        } catch (IllegalStateException erro) {
             JOptionPane.showMessageDialog(
                     null,
                     erro.getMessage(),
-                    "Erro ao iniciar banco de dados",
+                    "Erro ao iniciar",
                     JOptionPane.ERROR_MESSAGE
             );
             return;
         }
 
-        RepositorioBiblioteca repositorioSelecionado = repositorio;
-
         SwingUtilities.invokeLater(() -> {
             Biblioteca biblioteca =
-                    new Biblioteca(repositorioSelecionado);
+                    new Biblioteca(new RepositorioBibliotecaSQLite());
 
             new MainGUI(biblioteca).setVisible(true);
         });
     }
+
 
 
     /**
